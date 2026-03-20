@@ -1,0 +1,187 @@
+name: UbuntuNet SAML IdP — CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  PHP_VERSION: "8.3"
+
+jobs:
+  # ── Static analysis & linting ─────────────────────────────
+  lint:
+    name: Lint & Static Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: intl, pdo_pgsql, redis, xml, zip, bcmath
+          coverage: none
+
+      - name: Install dependencies
+        working-directory: app
+        run: composer install --no-progress --prefer-dist --optimize-autoloader
+
+      - name: PHP syntax check
+        working-directory: app
+        run: find src tests -name "*.php" -exec php -l {} \; | grep -v "No syntax errors"  || true
+
+      - name: Check Symfony container
+        working-directory: app
+        run: APP_SECRET=test php bin/console debug:container --env=prod --no-debug 2>&1 | head -20
+
+      - name: Twig lint
+        working-directory: app
+        run: php bin/console lint:twig templates/ --env=test
+
+      - name: YAML lint
+        working-directory: app
+        run: php bin/console lint:yaml config/ --env=test
+
+  # ── Unit tests ───────────────────────────────────────────
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: intl, pdo_pgsql, redis, xml, zip, bcmath
+          coverage: xdebug
+
+      - name: Install dependencies
+        working-directory: app
+        run: composer install --no-progress --prefer-dist
+
+      - name: Run unit tests
+        working-directory: app
+        run: php bin/phpunit --testsuite=Unit --coverage-clover=var/coverage-unit.xml
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: app/var/coverage-unit.xml
+          flags: unit
+
+  # ── Integration tests ────────────────────────────────────
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: samlidp_test
+          POSTGRES_USER: samlidp
+          POSTGRES_PASSWORD: test_password
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: intl, pdo_pgsql, redis, xml, zip, bcmath
+          coverage: none
+
+      - name: Install dependencies
+        working-directory: app
+        run: composer install --no-progress --prefer-dist
+
+      - name: Create test .env
+        working-directory: app
+        run: |
+          cat > .env.test.local << 'EOF'
+          DATABASE_URL=postgresql://samlidp:test_password@127.0.0.1:5432/samlidp_test
+          REDIS_URL=redis://127.0.0.1:6379
+          SAMLIDP_HOSTNAME=idp.ubuntunet.test
+          APP_SECRET=test_secret_32_chars_long_minimum
+          MAILER_DSN=null://null
+          VAULT_PASS=test_vault_pass
+          EOF
+
+      - name: Create test database
+        working-directory: app
+        run: |
+          php bin/console doctrine:database:create --env=test --if-not-exists
+          php bin/console doctrine:migrations:migrate --env=test --no-interaction --allow-no-migration
+
+      - name: Run integration tests
+        working-directory: app
+        run: php bin/phpunit --testsuite=Integration
+
+  # ── Docker build check ───────────────────────────────────
+  docker-build:
+    name: Docker Build Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build app image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile.app
+          push: false
+          tags: samlidp-app:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build SSP image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile.ssp
+          push: false
+          tags: samlidp-ssp:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ── Deploy to production ─────────────────────────────────
+  deploy:
+    name: Deploy to Production
+    needs: [lint, unit-tests, integration-tests, docker-build]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_SSH_HOST }}
+          username: ${{ secrets.PROD_SSH_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            cd /opt/managedidp
+            git pull origin main
+            make deploy-update
+            echo "Deployment complete at $(date)"

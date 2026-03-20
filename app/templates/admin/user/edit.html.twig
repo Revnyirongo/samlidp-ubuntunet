@@ -1,0 +1,78 @@
+{% extends 'admin/base.html.twig' %}
+{% block page_title %}Edit Admin User{% endblock %}
+
+{% block breadcrumb %}
+<div class="text-sm text-gray-500">
+    <a href="{{ path('admin_user_index') }}" class="hover:text-gray-700">Admin Users</a>
+    <span class="mx-2">/</span>
+    <span class="text-gray-700">{{ user.email }}</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl">
+    <form method="post" class="space-y-6 rounded-xl border border-gray-200 bg-white p-6">
+        <input type="hidden" name="_token" value="{{ csrf_token('user_edit_' ~ user.id) }}">
+
+        <div class="grid gap-5 md:grid-cols-2">
+            <div>
+                <label class="mb-1.5 block text-sm font-medium text-gray-700">Email</label>
+                <input type="email" value="{{ user.email }}" disabled
+                       class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500">
+            </div>
+            <div>
+                <label for="fullName" class="mb-1.5 block text-sm font-medium text-gray-700">Full Name</label>
+                <input id="fullName" name="user[fullName]" type="text" required value="{{ user.fullName }}"
+                       class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-transparent focus:ring-2 focus:ring-idp-500">
+            </div>
+        </div>
+
+        <div class="grid gap-5 md:grid-cols-2">
+            <div>
+                <label for="role" class="mb-1.5 block text-sm font-medium text-gray-700">Role</label>
+                <select id="role" name="user[role]"
+                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-transparent focus:ring-2 focus:ring-idp-500">
+                    <option value="ROLE_ADMIN" {{ 'ROLE_SUPER_ADMIN' not in user.roles ? 'selected' : '' }}>Admin</option>
+                    <option value="ROLE_SUPER_ADMIN" {{ 'ROLE_SUPER_ADMIN' in user.roles ? 'selected' : '' }}>Super Admin</option>
+                </select>
+            </div>
+            <div>
+                <label for="password" class="mb-1.5 block text-sm font-medium text-gray-700">New Password</label>
+                <input id="password" name="user[password]" type="password" minlength="12"
+                       class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-transparent focus:ring-2 focus:ring-idp-500">
+                <p class="mt-1 text-xs text-gray-500">Leave blank to keep the current password.</p>
+            </div>
+        </div>
+
+        <label class="flex items-center gap-2 text-sm text-gray-700">
+            <input type="checkbox" name="user[isActive]" value="1" {{ user.active ? 'checked' : '' }}
+                   class="rounded border-gray-300 text-idp-500 focus:ring-idp-500">
+            Account active
+        </label>
+
+        <div>
+            <label class="mb-2 block text-sm font-medium text-gray-700">Tenant Assignments</label>
+            <div class="grid gap-2 rounded-xl border border-gray-200 bg-gray-50 p-4 md:grid-cols-2">
+                {% for tenant in tenants %}
+                    <label class="flex items-center gap-2 text-sm text-gray-700">
+                        <input type="checkbox" name="user[tenantIds][]" value="{{ tenant.id }}"
+                               {{ user.managedTenants.contains(tenant) ? 'checked' : '' }}
+                               class="rounded border-gray-300 text-idp-500 focus:ring-idp-500">
+                        {{ tenant.name }}
+                    </label>
+                {% else %}
+                    <p class="text-sm text-gray-500">No tenants available.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <button type="submit"
+                    class="rounded-lg bg-idp-500 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-idp-600">
+                Save Changes
+            </button>
+            <a href="{{ path('admin_user_index') }}" class="text-sm text-gray-600 hover:text-gray-800">Back</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

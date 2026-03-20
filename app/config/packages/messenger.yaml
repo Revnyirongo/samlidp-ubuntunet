@@ -1,0 +1,23 @@
+framework:
+    messenger:
+        failure_transport: failed
+
+        transports:
+            async:
+                dsn: '%env(REDIS_URL)%'
+                options:
+                    stream: samlidp_messages
+                    group: samlidp_workers
+                retry_strategy:
+                    max_retries: 3
+                    multiplier: 2
+                    delay: 1000
+                    max_delay: 60000
+
+            failed:
+                dsn: 'doctrine://default?queue_name=failed'
+
+        routing:
+            App\Message\RefreshAllMetadataMessage:     async
+            App\Message\RegenerateAllConfigsMessage:   async
+            App\Message\CheckCertificateExpiryMessage: async

@@ -1,0 +1,56 @@
+{% extends 'admin/base.html.twig' %}
+{% block page_title %}New Admin User{% endblock %}
+
+{% block breadcrumb %}
+<div class="text-sm text-gray-500">
+    <a href="{{ path('admin_user_index') }}" class="hover:text-gray-700">Admin Users</a>
+    <span class="mx-2">/</span>
+    <span class="text-gray-700">New</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl">
+    <form method="post" class="space-y-6 rounded-xl border border-gray-200 bg-white p-6">
+        <input type="hidden" name="_token" value="{{ csrf_token('user_new') }}">
+
+        <div class="grid gap-5 md:grid-cols-2">
+            <div>
+                <label for="email" class="mb-1.5 block text-sm font-medium text-gray-700">Email</label>
+                <input id="email" name="user[email]" type="email" required value="{{ user.email }}"
+                       class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-transparent focus:ring-2 focus:ring-idp-500">
+            </div>
+            <div>
+                <label for="fullName" class="mb-1.5 block text-sm font-medium text-gray-700">Full Name</label>
+                <input id="fullName" name="user[fullName]" type="text" required value="{{ user.fullName }}"
+                       class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-transparent focus:ring-2 focus:ring-idp-500">
+            </div>
+        </div>
+
+        <div class="grid gap-5 md:grid-cols-2">
+            <div>
+                <label for="role" class="mb-1.5 block text-sm font-medium text-gray-700">Role</label>
+                <select id="role" name="user[role]"
+                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-transparent focus:ring-2 focus:ring-idp-500">
+                    <option value="ROLE_ADMIN" {{ 'ROLE_SUPER_ADMIN' not in user.roles ? 'selected' : '' }}>Admin</option>
+                    <option value="ROLE_SUPER_ADMIN" {{ 'ROLE_SUPER_ADMIN' in user.roles ? 'selected' : '' }}>Super Admin</option>
+                </select>
+            </div>
+            <div>
+                <label for="password" class="mb-1.5 block text-sm font-medium text-gray-700">Password</label>
+                <input id="password" name="user[password]" type="password" required minlength="12"
+                       class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-transparent focus:ring-2 focus:ring-idp-500">
+                <p class="mt-1 text-xs text-gray-500">Minimum 12 characters.</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <button type="submit"
+                    class="rounded-lg bg-idp-500 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-idp-600">
+                Create User
+            </button>
+            <a href="{{ path('admin_user_index') }}" class="text-sm text-gray-600 hover:text-gray-800">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

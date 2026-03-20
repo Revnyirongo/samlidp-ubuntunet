@@ -1,0 +1,20 @@
+framework:
+    secret: '%env(APP_SECRET)%'
+    http_method_override: true
+    handle_all_throwables: true
+
+    session:
+        handler_id: app.session.handler.redis
+        cookie_secure: auto
+        cookie_samesite: lax
+        gc_probability: 0
+
+    trusted_proxies: '%env(TRUSTED_PROXIES)%'
+    trusted_headers: ['x-forwarded-for', 'x-forwarded-proto', 'x-forwarded-port']
+
+    lock:
+        samlidp_config: '%env(REDIS_URL)%'
+
+    uid:
+        default_uuid_version: 7
+        time_based_uuid_version: 7

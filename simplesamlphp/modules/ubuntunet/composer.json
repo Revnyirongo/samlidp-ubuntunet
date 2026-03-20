@@ -1,0 +1,16 @@
+{
+    "name": "ubuntunet/simplesamlphp-module-ubuntunet",
+    "description": "UbuntuNet custom SimpleSAMLphp module",
+    "type": "simplesamlphp-module",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "SimpleSAML\\Module\\ubuntunet\\": "lib/"
+        }
+    },
+    "extra": {
+        "ssp-module": {
+            "name": "ubuntunet"
+        }
+    }
+}

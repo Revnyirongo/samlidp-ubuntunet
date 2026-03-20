@@ -1,0 +1,255 @@
+services:
+  # ──────────────────────────────────────────────
+  # Nginx reverse proxy (front door)
+  # ──────────────────────────────────────────────
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: samlidp_nginx
+    restart: unless-stopped
+    ulimits:
+      nofile:
+        soft: 8192
+        hard: 8192
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./conf/credentials/wildcard_certificate.crt:/etc/ssl/certs/idp.ubuntunet.net.crt:ro
+      - ./conf/credentials/wildcard_certificate.key:/etc/ssl/private/idp.ubuntunet.net.key:ro
+      - ./app/public:/var/www/html/public:ro
+      - tenant_uploads:/var/www/html/public/uploads
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - app
+      - simplesamlphp
+    networks:
+      frontend:
+      backend:
+        aliases:
+          - nginx
+
+  # ──────────────────────────────────────────────
+  # Main Symfony application (backend + admin UI)
+  # ──────────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.app
+      args:
+        APP_ENV: ${APP_ENV:-prod}
+    container_name: samlidp_app
+    restart: unless-stopped
+    environment:
+      APP_ENV: ${APP_ENV:-prod}
+      APP_SECRET: ${APP_SECRET}
+      DATABASE_URL: ${DATABASE_URL}
+      DEFAULT_URI: ${DEFAULT_URI}
+      LOCK_DSN: ${LOCK_DSN}
+      MAILER_DSN: ${MAILER_DSN}
+      MAILER_FROM_ADDRESS: ${MAILER_FROM_ADDRESS}
+      MAILER_FROM_NAME: ${MAILER_FROM_NAME}
+      SAMLIDP_HOSTNAME: ${SAMLIDP_HOSTNAME:-idp.ubuntunet.net}
+      VAULT_PASS: ${VAULT_PASS}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-127.0.0.1,REMOTE_ADDR}
+      TRUSTED_HOSTS: ${TRUSTED_HOSTS:-'^(idp\.ubuntunet\.net|.*\.idp\.ubuntunet\.net)$'}
+    volumes:
+      - ./.env:/var/www/html/.env:ro
+      - app_var:/var/www/html/var
+      - tenant_uploads:/var/www/html/public/uploads
+      - simplesamlphp_config:/var/www/html/simplesamlphp/config
+      - simplesamlphp_metadata:/var/www/html/simplesamlphp/metadata
+      - simplesamlphp_cert:/var/www/html/simplesamlphp/cert
+      - ./conf/credentials:/var/www/html/conf/credentials:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      backend:
+        aliases:
+          - app
+
+  # ──────────────────────────────────────────────
+  # SimpleSAMLphp IdP worker (per-tenant)
+  # ──────────────────────────────────────────────
+  simplesamlphp:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.ssp
+    container_name: samlidp_ssp
+    restart: unless-stopped
+    environment:
+      SAMLIDP_HOSTNAME: ${SAMLIDP_HOSTNAME:-idp.ubuntunet.net}
+      VAULT_PASS: ${VAULT_PASS}
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SSP_ADMIN_PASSWORD_HASH: ${SSP_ADMIN_PASSWORD_HASH}
+      SSP_SECRET_SALT: ${SSP_SECRET_SALT}
+    volumes:
+      - simplesamlphp_config:/var/simplesamlphp/vendor/simplesamlphp/simplesamlphp/config
+      - simplesamlphp_metadata:/var/simplesamlphp/vendor/simplesamlphp/simplesamlphp/metadata
+      - simplesamlphp_cert:/var/simplesamlphp/vendor/simplesamlphp/simplesamlphp/cert
+      - ./conf/credentials:/var/credentials:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      backend:
+        aliases:
+          - simplesamlphp
+
+  # ──────────────────────────────────────────────
+  # Background worker (metadata refresh, email)
+  # ──────────────────────────────────────────────
+  worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.app
+      args:
+        APP_ENV: ${APP_ENV:-prod}
+    container_name: samlidp_worker
+    restart: unless-stopped
+    command: ["php", "bin/console", "messenger:consume", "async", "--time-limit=3600", "--memory-limit=256M"]
+    environment:
+      APP_ENV: ${APP_ENV:-prod}
+      APP_SECRET: ${APP_SECRET}
+      DATABASE_URL: ${DATABASE_URL}
+      DEFAULT_URI: ${DEFAULT_URI}
+      LOCK_DSN: ${LOCK_DSN}
+      MAILER_DSN: ${MAILER_DSN}
+      MAILER_FROM_ADDRESS: ${MAILER_FROM_ADDRESS}
+      MAILER_FROM_NAME: ${MAILER_FROM_NAME}
+      SAMLIDP_HOSTNAME: ${SAMLIDP_HOSTNAME:-idp.ubuntunet.net}
+      VAULT_PASS: ${VAULT_PASS}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-127.0.0.1,REMOTE_ADDR}
+      TRUSTED_HOSTS: ${TRUSTED_HOSTS:-'^(idp\.ubuntunet\.net|.*\.idp\.ubuntunet\.net)$'}
+    volumes:
+      - ./.env:/var/www/html/.env:ro
+      - app_var:/var/www/html/var
+      - tenant_uploads:/var/www/html/public/uploads
+      - simplesamlphp_config:/var/www/html/simplesamlphp/config
+      - simplesamlphp_metadata:/var/www/html/simplesamlphp/metadata
+      - simplesamlphp_cert:/var/www/html/simplesamlphp/cert
+      - ./conf/credentials:/var/www/html/conf/credentials:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      backend:
+        aliases:
+          - worker
+
+  # ──────────────────────────────────────────────
+  # Scheduler (cron-style tasks)
+  # ──────────────────────────────────────────────
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.app
+      args:
+        APP_ENV: ${APP_ENV:-prod}
+    container_name: samlidp_scheduler
+    restart: unless-stopped
+    command: ["php", "bin/console", "messenger:consume", "scheduler_default", "--time-limit=3600", "--memory-limit=256M"]
+    environment:
+      APP_ENV: ${APP_ENV:-prod}
+      APP_SECRET: ${APP_SECRET}
+      DATABASE_URL: ${DATABASE_URL}
+      DEFAULT_URI: ${DEFAULT_URI}
+      LOCK_DSN: ${LOCK_DSN}
+      MAILER_DSN: ${MAILER_DSN}
+      MAILER_FROM_ADDRESS: ${MAILER_FROM_ADDRESS}
+      MAILER_FROM_NAME: ${MAILER_FROM_NAME}
+      SAMLIDP_HOSTNAME: ${SAMLIDP_HOSTNAME:-idp.ubuntunet.net}
+      VAULT_PASS: ${VAULT_PASS}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-127.0.0.1,REMOTE_ADDR}
+      TRUSTED_HOSTS: ${TRUSTED_HOSTS:-'^(idp\.ubuntunet\.net|.*\.idp\.ubuntunet\.net)$'}
+    volumes:
+      - ./.env:/var/www/html/.env:ro
+      - app_var:/var/www/html/var
+      - tenant_uploads:/var/www/html/public/uploads
+      - simplesamlphp_config:/var/www/html/simplesamlphp/config
+      - simplesamlphp_metadata:/var/www/html/simplesamlphp/metadata
+    depends_on:
+      - db
+      - redis
+    networks:
+      backend:
+        aliases:
+          - scheduler
+
+  # ──────────────────────────────────────────────
+  # PostgreSQL database
+  # ──────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: samlidp_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-samlidp}
+      POSTGRES_USER: ${DB_USER:-samlidp}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-samlidp} -d ${DB_NAME:-samlidp}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      backend:
+        aliases:
+          - db
+
+  # ──────────────────────────────────────────────
+  # Redis (sessions + message queue + cache)
+  # ──────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: samlidp_redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD} --save 60 1 --loglevel warning
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      backend:
+        aliases:
+          - redis
+
+volumes:
+  app_var:
+  db_data:
+  redis_data:
+  nginx_logs:
+  tenant_uploads:
+  simplesamlphp_config:
+  simplesamlphp_metadata:
+  simplesamlphp_cert:
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.19.0.0/16

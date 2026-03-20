@@ -1,0 +1,24 @@
+monolog:
+    channels:
+        - deprecation
+        - samlidp
+
+    handlers:
+        main:
+            type:           stream
+            path:           php://stderr
+            level:          notice
+            channels:       ['!event']
+            formatter:      monolog.formatter.json
+
+        samlidp:
+            type:           stream
+            path:           php://stderr
+            level:          debug
+            channels:       [samlidp]
+            formatter:      monolog.formatter.json
+
+        deprecation:
+            type:           stream
+            path:           php://stderr
+            channels:       [deprecation]

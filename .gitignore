@@ -1,0 +1,32 @@
+# Environment & secrets
+.env
+!.env.example
+conf/credentials/*
+!conf/credentials/.gitkeep
+!conf/credentials/*.example
+conf/credentials/wildcard_certificate.key
+conf/credentials/wildcard_certificate.key.enc
+conf/credentials/wildcard_certificate.crt
+
+# App runtime
+app/var/
+app/vendor/
+app/public/build/
+app/public/bundles/
+app/node_modules/
+
+# SimpleSAMLphp generated configs
+simplesamlphp/config/config.php
+simplesamlphp/config/authsources-*.php
+simplesamlphp/metadata/saml20-idp-hosted.php
+simplesamlphp/metadata/saml20-sp-remote.php
+simplesamlphp/cert/
+
+# Docker volumes (managed externally)
+backups/
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo

@@ -1,0 +1,22 @@
+{% extends 'admin/base.html.twig' %}
+{% block page_title %}Profile{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl rounded-xl border border-gray-200 bg-white p-6">
+    <h2 class="mb-4 text-lg font-semibold text-gray-900">Profile</h2>
+    <dl class="space-y-3 text-sm">
+        <div>
+            <dt class="font-medium text-gray-500">Full Name</dt>
+            <dd class="text-gray-900">{{ user.fullName }}</dd>
+        </div>
+        <div>
+            <dt class="font-medium text-gray-500">Email</dt>
+            <dd class="text-gray-900">{{ user.email }}</dd>
+        </div>
+        <div>
+            <dt class="font-medium text-gray-500">Roles</dt>
+            <dd class="text-gray-900">{{ user.roles|join(', ') }}</dd>
+        </div>
+    </dl>
+</div>
+{% endblock %}

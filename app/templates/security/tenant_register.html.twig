@@ -1,0 +1,62 @@
+{% extends 'security/_auth_layout.html.twig' %}
+
+{% block auth_title %}Create your {{ tenant.name }} account{% endblock %}
+{% block auth_subtitle %}Submit your details for review by a tenant administrator. You will receive an email once the account is approved.{% endblock %}
+
+{% block auth_content %}
+<form method="post" class="space-y-5">
+    <input type="hidden" name="_token" value="{{ csrf_token('tenant_register_' ~ tenant.slug) }}">
+    <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+        Tenant: <span class="font-semibold text-slate-900">{{ tenant.name }}</span>
+    </div>
+    <div>
+        <label for="fullName" class="mb-1.5 block text-sm font-semibold text-slate-700">Full name</label>
+        <input id="fullName" name="registration[fullName]" type="text" required value="{{ formData.fullName }}"
+               class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-transparent focus:ring-2 focus:ring-idp-500">
+    </div>
+    <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+            <label for="givenName" class="mb-1.5 block text-sm font-semibold text-slate-700">Given name</label>
+            <input id="givenName" name="registration[givenName]" type="text" value="{{ formData.givenName }}"
+                   class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-transparent focus:ring-2 focus:ring-idp-500">
+        </div>
+        <div>
+            <label for="surname" class="mb-1.5 block text-sm font-semibold text-slate-700">Surname</label>
+            <input id="surname" name="registration[surname]" type="text" value="{{ formData.surname }}"
+                   class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-transparent focus:ring-2 focus:ring-idp-500">
+        </div>
+    </div>
+    <div>
+        <label for="username" class="mb-1.5 block text-sm font-semibold text-slate-700">Preferred username</label>
+        <input id="username" name="registration[username]" type="text" required value="{{ formData.username }}"
+               class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-transparent focus:ring-2 focus:ring-idp-500"
+               placeholder="studentnumber or preferred username">
+    </div>
+    <div>
+        <label for="email" class="mb-1.5 block text-sm font-semibold text-slate-700">Email address</label>
+        <input id="email" name="registration[email]" type="email" required value="{{ formData.email }}"
+               class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-transparent focus:ring-2 focus:ring-idp-500">
+    </div>
+    <div>
+        <label for="affiliation" class="mb-1.5 block text-sm font-semibold text-slate-700">Affiliation</label>
+        <input id="affiliation" name="registration[affiliation]" type="text" value="{{ formData.affiliation }}"
+               class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-transparent focus:ring-2 focus:ring-idp-500"
+               placeholder="student, staff, faculty">
+    </div>
+    <div>
+        <label for="message" class="mb-1.5 block text-sm font-semibold text-slate-700">Message</label>
+        <textarea id="message" name="registration[message]" rows="4"
+                  class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-transparent focus:ring-2 focus:ring-idp-500"
+                  placeholder="Optional note for the tenant administrator.">{{ formData.message }}</textarea>
+    </div>
+    <button type="submit"
+            class="w-full rounded-2xl bg-idp-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-idp-500">
+        Submit for approval
+    </button>
+    <div class="space-y-2 text-center text-sm text-slate-500">
+        <div>
+            <a href="{{ path('app_tenant_forgot_password', {slug: tenant.slug}) }}" class="font-semibold text-idp-600 hover:underline">Already have an account? Reset password</a>
+        </div>
+    </div>
+</form>
+{% endblock %}

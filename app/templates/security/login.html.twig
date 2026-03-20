@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex,nofollow">
+    <title>Sign in - UbuntuNet IdP Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ubuntu: {
+                            500: '#d96a2e',
+                            600: '#bf5720',
+                        },
+                        idp: {
+                            50: '#eef4fb',
+                            100: '#d8e7f6',
+                            500: '#1f5f97',
+                            600: '#174d7d',
+                            700: '#103857',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Manrope', sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(217, 106, 46, 0.11), transparent 20rem),
+                radial-gradient(circle at bottom right, rgba(31, 95, 151, 0.14), transparent 24rem),
+                linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+        }
+    </style>
+</head>
+<body class="min-h-full">
+    <div class="mx-auto flex min-h-screen max-w-6xl items-center px-4 py-8 sm:px-6 lg:px-8">
+        <div class="grid w-full overflow-hidden rounded-[2rem] border border-slate-200/70 bg-white/88 shadow-[0_30px_70px_rgba(15,23,42,0.08)] backdrop-blur lg:grid-cols-[1.05fr_0.95fr]">
+            <section class="relative hidden overflow-hidden border-r border-slate-200/70 bg-slate-950 px-10 py-12 text-white lg:block">
+                <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(217,106,46,0.28),transparent_22rem),radial-gradient(circle_at_bottom_right,rgba(31,90,78,0.35),transparent_24rem)]"></div>
+                <div class="relative flex h-full flex-col justify-between">
+                    <div>
+                        <div class="mb-10 inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-2">
+                            <div class="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-ubuntu-500 to-idp-600 text-sm font-extrabold text-white">U</div>
+                            <div>
+                                <div class="text-sm font-extrabold tracking-tight">UbuntuNet Managed IdP</div>
+                                <div class="text-xs text-white/60">SAML administration console</div>
+                            </div>
+                        </div>
+
+                        <h1 class="max-w-md text-4xl font-extrabold tracking-tight">Operate tenants, service providers, and user stores from one place.</h1>
+                        <p class="mt-4 max-w-md text-sm leading-6 text-white/70">
+                            Minimal control plane for federation onboarding, attribute release, and tenant-local identity management.
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-3 text-sm">
+                        <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+                            <div class="text-white/50">Tenants</div>
+                            <div class="mt-1 font-bold">Managed IdPs</div>
+                        </div>
+                        <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+                            <div class="text-white/50">Access</div>
+                            <div class="mt-1 font-bold">Admin controlled</div>
+                        </div>
+                        <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+                            <div class="text-white/50">Federation</div>
+                            <div class="mt-1 font-bold">Metadata driven</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="px-6 py-8 sm:px-10 sm:py-10">
+                <div class="mx-auto max-w-md">
+                    <div class="mb-8 lg:hidden">
+                        <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-ubuntu-500 to-idp-600 text-base font-extrabold text-white shadow-sm">U</div>
+                        <h1 class="text-3xl font-extrabold tracking-tight text-slate-900">UbuntuNet Managed IdP</h1>
+                        <p class="mt-2 text-sm text-slate-500">Sign in to the administration console.</p>
+                    </div>
+
+                    <div class="mb-8 hidden lg:block">
+                        <div class="text-sm font-bold uppercase tracking-[0.16em] text-slate-400">Admin Sign In</div>
+                        <h2 class="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">Welcome back</h2>
+                        <p class="mt-2 text-sm text-slate-500">Use your managed administrator account to continue.</p>
+                    </div>
+
+                    {% if mailer_enabled is defined and not mailer_enabled %}
+                    <div class="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                        Email delivery is currently disabled. Configure <code>MAILER_DSN</code>, <code>MAILER_FROM_ADDRESS</code>, and <code>MAILER_FROM_NAME</code> in <code>.env</code> before using password reset or self-registration in production.
+                    </div>
+                    {% endif %}
+
+                    {% for type, messages in app.flashes %}
+                        {% set colorMap = {'success': 'blue', 'danger': 'red', 'warning': 'amber', 'info': 'blue'} %}
+                        {% set color = colorMap[type] ?? 'gray' %}
+                        {% for message in messages %}
+                        <div class="mb-4 rounded-2xl border border-{{ color }}-200 bg-{{ color }}-50 px-4 py-3 text-sm text-{{ color }}-800">
+                            {{ message }}
+                        </div>
+                        {% endfor %}
+                    {% endfor %}
+
+                    {% if error %}
+                    <div class="mb-5 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-sm">
+                        <svg class="mt-0.5 h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span>{{ error.messageKey|trans(error.messageData, 'security') }}</span>
+                    </div>
+                    {% endif %}
+
+                    <form action="{{ path('app_login') }}" method="post" class="space-y-5">
+                        <div>
+                            <label for="email" class="mb-1.5 block text-sm font-semibold text-slate-700">Email address</label>
+                            <input type="email" id="email" name="_username"
+                                   value="{{ last_username }}"
+                                   autocomplete="email"
+                                   required
+                                   class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-transparent focus:ring-2 focus:ring-idp-500"
+                                   placeholder="admin@ubuntunet.net">
+                        </div>
+
+                        <div>
+                            <label for="password" class="mb-1.5 block text-sm font-semibold text-slate-700">Password</label>
+                            <input type="password" id="password" name="_password"
+                                   autocomplete="current-password"
+                                   required
+                                   class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-transparent focus:ring-2 focus:ring-idp-500"
+                                   placeholder="Enter your password">
+                        </div>
+
+                        <label class="flex items-center gap-2.5 text-sm text-slate-600">
+                            <input type="checkbox" name="_remember_me"
+                                   class="rounded border-slate-300 text-idp-600 focus:ring-idp-500">
+                            Remember me
+                        </label>
+
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+                        <button type="submit"
+                                class="w-full rounded-2xl bg-idp-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-idp-500">
+                            Sign in
+                        </button>
+
+                        <div class="flex items-center justify-between text-sm text-slate-500">
+                            <a href="{{ path('app_forgot_password') }}" class="font-semibold text-idp-600 hover:underline">Forgot password?</a>
+                            <a href="{{ path('app_register') }}" class="font-semibold text-idp-600 hover:underline">Request access</a>
+                        </div>
+                    </form>
+
+                    <div class="mt-8 border-t border-slate-200 pt-5 text-xs leading-5 text-slate-400">
+                        idp.ubuntunet.net<br>
+                        Multitenant SAML Identity Provider Service
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</body>
+</html>

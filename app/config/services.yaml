@@ -1,0 +1,66 @@
+parameters:
+    samlidp.hostname:         '%env(SAMLIDP_HOSTNAME)%'
+    samlidp.ssp_config_dir:   '%kernel.project_dir%/simplesamlphp/config'
+    samlidp.ssp_metadata_dir: '%kernel.project_dir%/simplesamlphp/metadata'
+    samlidp.ssp_cert_dir:     '%kernel.project_dir%/simplesamlphp/cert'
+    app.version_file:         '%kernel.project_dir%/../VERSION'
+    mailer.dsn:               '%env(MAILER_DSN)%'
+    mailer.from_address:      '%env(MAILER_FROM_ADDRESS)%'
+    mailer.from_name:         '%env(MAILER_FROM_NAME)%'
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        bind:
+            string $samlidpHostname:   '%samlidp.hostname%'
+            string $sspConfigDir:      '%samlidp.ssp_config_dir%'
+            string $sspMetadataDir:    '%samlidp.ssp_metadata_dir%'
+            string $sspCertDir:        '%samlidp.ssp_cert_dir%'
+            string $versionFile:       '%app.version_file%'
+            string $mailerDsn:         '%mailer.dsn%'
+            string $mailerFromAddress: '%mailer.from_address%'
+            string $mailerFromName:    '%mailer.from_name%'
+
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Entity/'
+            - '../src/Kernel.php'
+
+    # HTTP client with sensible defaults for metadata fetching
+    app.metadata_http_client:
+        class: Symfony\Component\HttpClient\HttpClient
+        factory: ['Symfony\Component\HttpClient\HttpClient', 'create']
+        arguments:
+            -   timeout: 30
+                max_redirects: 3
+                verify_peer: true
+                verify_host: true
+                headers:
+                    User-Agent: 'UbuntuNet-SAML-IdP/2.0 (+https://idp.ubuntunet.net)'
+
+    App\Service\MetadataService:
+        arguments:
+            $httpClient: '@app.metadata_http_client'
+
+    app.redis_connection:
+        class: Redis
+        factory: ['Symfony\Component\Cache\Adapter\RedisAdapter', 'createConnection']
+        arguments:
+            - '%env(REDIS_URL)%'
+
+    app.session.handler.redis:
+        class: Symfony\Component\HttpFoundation\Session\Storage\Handler\RedisSessionHandler
+        arguments:
+            - '@app.redis_connection'
+
+    # Lock factory using Redis
+    Symfony\Component\Lock\LockFactory:
+        arguments:
+            $store: '@Symfony\Component\Lock\Store\RedisStore'
+
+    Symfony\Component\Lock\Store\RedisStore:
+        arguments:
+            $redis: '@app.redis_connection'

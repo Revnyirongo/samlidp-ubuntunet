@@ -1,0 +1,526 @@
+{% extends 'admin/base.html.twig' %}
+
+{% set isNew = tenant.id is null %}
+{% block page_title %}{{ isNew ? 'New Tenant' : 'Edit ' ~ tenant.name }}{% endblock %}
+
+{% block breadcrumb %}
+<nav class="text-sm text-gray-500 mt-1">
+    <a href="{{ path('admin_tenant_index') }}" class="hover:text-gray-700">Tenants</a>
+    {% if not isNew %}
+    <span class="mx-2">/</span>
+    <a href="{{ path('admin_tenant_show', {id: tenant.id}) }}" class="hover:text-gray-700">{{ tenant.name }}</a>
+    {% endif %}
+    <span class="mx-2">/</span>
+    <span class="text-gray-900">{{ isNew ? 'New' : 'Edit' }}</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl">
+<form method="post"
+      enctype="multipart/form-data"
+      action="{{ isNew ? path('admin_tenant_new') : path('admin_tenant_edit', {id: tenant.id}) }}">
+    <input type="hidden" name="_token"
+           value="{{ csrf_token(isNew ? 'tenant_new' : 'tenant_edit_' ~ tenant.id) }}">
+
+    {# ── Basic Info ──────────────────────────────────────────── #}
+    <div class="bg-white rounded-xl border border-gray-200 p-6 mb-5">
+        <h2 class="text-sm font-semibold text-gray-900 mb-5">Basic Information</h2>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="sm:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                    Institution Name <span class="text-red-500">*</span>
+                </label>
+                <input type="text" name="tenant[name]" required
+                       value="{{ tenant.name }}"
+                       placeholder="University of Nairobi"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                    Slug (subdomain) <span class="text-red-500">*</span>
+                </label>
+                <div class="flex items-center gap-0">
+                    <input type="text" name="tenant[slug]" required
+                           value="{{ tenant.slug }}"
+                           placeholder="uon"
+                           pattern="[a-z0-9][a-z0-9\-]{0,61}[a-z0-9]"
+                           {{ not isNew ? 'readonly class="bg-gray-50"' : '' }}
+                           class="flex-1 px-3 py-2 border border-r-0 border-gray-300 rounded-l-lg text-sm focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none font-mono">
+                    <span class="px-3 py-2 bg-gray-100 border border-gray-300 rounded-r-lg text-xs text-gray-500 whitespace-nowrap">
+                        .idp.ubuntunet.net
+                    </span>
+                </div>
+                <p class="text-xs text-gray-400 mt-1">Lowercase alphanumeric + hyphens only. Cannot be changed after creation.</p>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Status</label>
+                <select name="tenant[status]"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none">
+                    <option value="pending"   {{ tenant.status == 'pending'   ? 'selected' : '' }}>Pending</option>
+                    <option value="active"    {{ tenant.status == 'active'    ? 'selected' : '' }}>Active</option>
+                    <option value="suspended" {{ tenant.status == 'suspended' ? 'selected' : '' }}>Suspended</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    {# ── Organisation ────────────────────────────────────────── #}
+    <div class="bg-white rounded-xl border border-gray-200 p-6 mb-5">
+        <h2 class="text-sm font-semibold text-gray-900 mb-5">Organisation Details</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Organisation Name</label>
+                <input type="text" name="tenant[organizationName]"
+                       value="{{ tenant.organizationName }}"
+                       placeholder="University of Nairobi"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Organisation URL</label>
+                <input type="url" name="tenant[organizationUrl]"
+                       value="{{ tenant.organizationUrl }}"
+                       placeholder="https://uon.ac.ke"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none">
+            </div>
+            <div class="sm:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Upload Organisation Logo</label>
+                <input type="file" name="tenant[logoFile]" accept=".png,.jpg,.jpeg,.webp,.svg,image/png,image/jpeg,image/webp,image/svg+xml"
+                       class="w-full rounded-lg border border-dashed border-gray-300 bg-gray-50 px-3 py-3 text-sm text-gray-600 file:mr-3 file:rounded-lg file:border-0 file:bg-idp-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-idp-600">
+                <p class="mt-1 text-xs text-gray-400">PNG, JPG, WEBP, or SVG. This logo is used on tenant login screens and federation metadata.</p>
+            </div>
+            <div class="sm:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Organisation Logo URL</label>
+                <input type="url" name="tenant[logoUrl]"
+                       value="{{ tenant.logoUrl }}"
+                       placeholder="https://example.org/logo.png"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none">
+                <p class="mt-1 text-xs text-gray-400">Optional. Use this for a hosted logo URL if you do not want to upload the asset here.</p>
+                {% if tenant.logoUrl %}
+                <div class="mt-3 flex items-center gap-4 rounded-xl border border-gray-200 bg-gray-50 p-3">
+                    <img src="{{ tenant.logoUrl }}" alt="Logo preview" class="h-12 w-auto object-contain">
+                    <label class="inline-flex items-center gap-2 text-sm text-gray-600">
+                        <input type="checkbox" name="tenant[removeLogo]" value="1" class="rounded border-gray-300 text-idp-500 focus:ring-idp-500">
+                        Remove current logo
+                    </label>
+                </div>
+                {% endif %}
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Technical Contact Name</label>
+                <input type="text" name="tenant[technicalContactName]"
+                       value="{{ tenant.technicalContactName }}"
+                       placeholder="IT Helpdesk"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Technical Contact Email</label>
+                <input type="email" name="tenant[technicalContactEmail]"
+                       value="{{ tenant.technicalContactEmail }}"
+                       placeholder="it@uon.ac.ke"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none">
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 p-6 mb-5">
+        <h2 class="text-sm font-semibold text-gray-900 mb-1.5">Federation Metadata Profile</h2>
+        <p class="text-xs text-gray-500 mb-5">These values are emitted in hosted IdP metadata for eduGAIN-style federation registration and discovery.</p>
+        {% set profile = tenant.metadataProfile ?? {} %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="sm:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Metadata Display Name</label>
+                <input type="text" name="tenant[metadataProfile][display_name]"
+                       value="{{ profile.display_name|default('') }}"
+                       placeholder="UbuntuNet Identity Provider"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none">
+            </div>
+            <div class="sm:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Metadata Description</label>
+                <textarea name="tenant[metadataProfile][description]" rows="2"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none"
+                          placeholder="Federated identity provider for the institution.">{{ profile.description|default('') }}</textarea>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Information URL</label>
+                <input type="url" name="tenant[metadataProfile][information_url]"
+                       value="{{ profile.information_url|default('') }}"
+                       placeholder="https://example.org/about/identity"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Privacy Statement URL</label>
+                <input type="url" name="tenant[metadataProfile][privacy_statement_url]"
+                       value="{{ profile.privacy_statement_url|default('') }}"
+                       placeholder="https://example.org/privacy"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Support Contact Name</label>
+                <input type="text" name="tenant[metadataProfile][support_contact_name]"
+                       value="{{ profile.support_contact_name|default('') }}"
+                       placeholder="Identity Support Desk"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Support Contact Email</label>
+                <input type="email" name="tenant[metadataProfile][support_contact_email]"
+                       value="{{ profile.support_contact_email|default('') }}"
+                       placeholder="support@example.org"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Security Contact Name</label>
+                <input type="text" name="tenant[metadataProfile][security_contact_name]"
+                       value="{{ profile.security_contact_name|default('') }}"
+                       placeholder="Security Response Team"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Security Contact Email</label>
+                <input type="email" name="tenant[metadataProfile][security_contact_email]"
+                       value="{{ profile.security_contact_email|default('') }}"
+                       placeholder="security@example.org"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Registration Authority</label>
+                <input type="text" name="tenant[metadataProfile][registration_authority]"
+                       value="{{ profile.registration_authority|default('') }}"
+                       placeholder="https://idp.ubuntunet.net"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none">
+                <p class="mt-1 text-xs text-gray-400">For eduGAIN this value must match the authority registered with the federation operator.</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Registration Policy URL</label>
+                <input type="url" name="tenant[metadataProfile][registration_policy_url]"
+                       value="{{ profile.registration_policy_url|default('') }}"
+                       placeholder="https://idp.ubuntunet.net/federation/metadata-registration-practice-statement"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Logo Width</label>
+                <input type="number" min="1" name="tenant[metadataProfile][logo_width]"
+                       value="{{ profile.logo_width|default('200') }}"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Logo Height</label>
+                <input type="number" min="1" name="tenant[metadataProfile][logo_height]"
+                       value="{{ profile.logo_height|default('80') }}"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none">
+            </div>
+            <div class="sm:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Keywords</label>
+                <textarea name="tenant[metadataProfile][keywords]" rows="2"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none"
+                          placeholder="research&#10;identity&#10;federation">{{ profile.keywords is defined ? profile.keywords|join('\n') : '' }}</textarea>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Domain Hints</label>
+                <textarea name="tenant[metadataProfile][domain_hints]" rows="3"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none"
+                          placeholder="example.org&#10;students.example.org">{{ profile.domain_hints is defined ? profile.domain_hints|join('\n') : '' }}</textarea>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Additional Scopes</label>
+                <textarea name="tenant[metadataProfile][scopes]" rows="3"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none"
+                          placeholder="example.org">{{ profile.scopes is defined ? profile.scopes|join('\n') : '' }}</textarea>
+            </div>
+            <div class="sm:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Geolocation Hints</label>
+                <textarea name="tenant[metadataProfile][geolocation_hints]" rows="2"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none"
+                          placeholder="geo:-15.7861,35.0058">{{ profile.geolocation_hints is defined ? profile.geolocation_hints|join('\n') : '' }}</textarea>
+            </div>
+        </div>
+    </div>
+
+    {# ── Authentication ──────────────────────────────────────── #}
+    <div class="bg-white rounded-xl border border-gray-200 p-6 mb-5" x-data="{authType: '{{ tenant.authType }}'}">
+        <h2 class="text-sm font-semibold text-gray-900 mb-5">Authentication Backend</h2>
+
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Auth Type</label>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {% set authChoices = {'ldap': 'LDAP / AD', 'saml': 'SAML Proxy', 'database': 'PostgreSQL / MySQL', 'radius': 'RADIUS'} %}
+                {% for type, label in authChoices %}
+                {% set selected = type == 'database' ? tenant.authType in ['database', 'userpass'] : tenant.authType == type %}
+                <label class="flex items-center gap-2 p-3 border-2 rounded-lg cursor-pointer transition
+                    {{ selected ? 'border-idp-500 bg-idp-50' : 'border-gray-200 hover:border-gray-300' }}">
+                    <input type="radio" name="tenant[authType]" value="{{ type }}"
+                           {{ selected ? 'checked' : '' }}
+                           class="sr-only"
+                           onchange="syncAuthPanels()">
+                    <span class="text-sm font-medium text-gray-700">{{ label }}</span>
+                </label>
+                {% endfor %}
+            </div>
+            <p class="mt-2 text-xs text-gray-500">
+                PostgreSQL / MySQL uses the managed tenant-local user store and supports single-user edits plus CSV bulk import.
+            </p>
+        </div>
+
+        {# LDAP config panel #}
+        <div id="ldap-config" {{ tenant.authType != 'ldap' ? 'class="hidden"' : '' }}>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                LDAP Configuration (JSON)
+            </label>
+            <textarea name="tenant[ldapConfig]" rows="14"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none"
+                      placeholder="{}">{{ tenant.ldapConfig ? tenant.ldapConfig|json_encode(constant('JSON_PRETTY_PRINT')) : '{
+  "host": "ldaps://ldap.example.ac.zz:636",
+  "base_dn": "ou=people,dc=example,dc=ac,dc=zz",
+  "bind_dn": "cn=saml-bind,dc=example,dc=ac,dc=zz",
+  "bind_password": "secret",
+  "user_attr": "uid",
+  "search_filter": "(&(objectClass=person)(uid=%username%))",
+  "start_tls": false,
+  "attribute_map": {
+    "uid": ["uid"],
+    "mail": ["mail"],
+    "cn": ["cn"],
+    "displayName": ["displayName"],
+    "eduPersonPrincipalName": ["eduPersonPrincipalName"],
+    "eduPersonAffiliation": ["eduPersonAffiliation"],
+    "schacHomeOrganization": ["schacHomeOrganization"]
+  }
+}' }}</textarea>
+            <p class="text-xs text-gray-400 mt-1">Must be valid JSON. The bind_password is stored encrypted.</p>
+        </div>
+
+        {# SAML proxy config panel #}
+        <div id="saml-config" {{ tenant.authType != 'saml' ? 'class="hidden"' : '' }}>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                SAML Proxy Configuration (JSON)
+            </label>
+            <textarea name="tenant[samlUpstreamConfig]" rows="12"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none"
+                      placeholder="{}">{{ tenant.samlUpstreamConfig ? tenant.samlUpstreamConfig|json_encode(constant('JSON_PRETTY_PRINT')) : '{
+  "metadata_url": "https://upstream-idp.example.org/metadata",
+  "idp_entity_id": "https://upstream-idp.example.org/idp/shibboleth",
+  "discovery_url": "https://ds.example.org/WAYF"
+}' }}</textarea>
+            <p class="text-xs text-gray-400 mt-1">Provide at least <code>metadata_url</code> or <code>idp_entity_id</code>. Use this only when the tenant should proxy to an upstream SAML IdP.</p>
+        </div>
+
+        {# RADIUS config panel #}
+        <div id="radius-config" {{ tenant.authType != 'radius' ? 'class="hidden"' : '' }}>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                RADIUS Configuration (JSON)
+            </label>
+            <textarea name="tenant[radiusConfig]" rows="10"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none"
+                      placeholder="{}">{{ tenant.radiusConfig ? tenant.radiusConfig|json_encode(constant('JSON_PRETTY_PRINT')) : '{
+  "host": "radius.example.ac.zz",
+  "port": 1812,
+  "secret": "shared-secret",
+  "timeout": 5
+}' }}</textarea>
+            <p class="text-xs text-gray-400 mt-1">Provide the upstream RADIUS server details. At minimum this must include <code>host</code> and <code>secret</code>.</p>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 p-6 mb-5">
+        <h2 class="text-sm font-semibold text-gray-900 mb-1.5">eduroam / FreeRADIUS</h2>
+        <p class="text-xs text-gray-500 mb-5">These settings generate tenant-specific FreeRADIUS snippets for institutional eduroam onboarding.</p>
+        {% set eduroam = tenant.eduroamProfile ?? {} %}
+        <label class="mb-5 inline-flex items-center gap-2 text-sm font-medium text-gray-700">
+            <input type="checkbox" name="tenant[eduroamProfile][enabled]" value="1"
+                   {{ eduroam.enabled|default(false) ? 'checked' : '' }}
+                   data-eduroam-toggle
+                   class="rounded border-gray-300 text-idp-500 focus:ring-idp-500">
+            Enable eduroam / FreeRADIUS onboarding kit for this tenant
+        </label>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 {{ eduroam.enabled|default(false) ? '' : 'hidden' }}" data-eduroam-fields>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Institution Realm</label>
+                <input type="text" name="tenant[eduroamProfile][realm]"
+                       value="{{ eduroam.realm|default('') }}"
+                       placeholder="example.ac.ke"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none">
+                <p class="mt-1 text-xs text-gray-400">This should match the user suffix used in eduroam, for example <code>user@example.ac.ke</code>.</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Recommended RADIUS Hostname</label>
+                <input type="text" name="tenant[eduroamProfile][local_radius_hostname]"
+                       value="{{ eduroam.local_radius_hostname|default('') }}"
+                       placeholder="radius.example.ac.ke"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Recommended Inner EAP Method</label>
+                <select name="tenant[eduroamProfile][default_eap_method]"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none">
+                    {% set eap = eduroam.default_eap_method|default('peap') %}
+                    <option value="peap" {{ eap == 'peap' ? 'selected' : '' }}>PEAP / MSCHAPv2</option>
+                    <option value="ttls-pap" {{ eap == 'ttls-pap' ? 'selected' : '' }}>EAP-TTLS / PAP</option>
+                    <option value="tls" {{ eap == 'tls' ? 'selected' : '' }}>EAP-TLS</option>
+                </select>
+            </div>
+            <div class="flex items-center">
+                <label class="flex items-center gap-2 text-sm text-gray-700">
+                    <input type="checkbox" name="tenant[eduroamProfile][anonymous_outer_identity]" value="1"
+                           {{ eduroam.anonymous_outer_identity|default(true) ? 'checked' : '' }}
+                           class="rounded border-gray-300 text-idp-500 focus:ring-idp-500">
+                    Recommend anonymous outer identity
+                </label>
+            </div>
+            <div class="sm:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">National Proxy Servers</label>
+                <textarea name="tenant[eduroamProfile][national_proxy_servers]" rows="3"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none"
+                          placeholder="nro.example.org:1812">{{ eduroam.national_proxy_servers is defined ? eduroam.national_proxy_servers|join('\n') : '' }}</textarea>
+                <p class="mt-1 text-xs text-gray-400">One host:port per line. These are used in the generated roaming proxy configuration.</p>
+            </div>
+        </div>
+    </div>
+
+    {# ── Federation Metadata ──────────────────────────────────── #}
+    <div class="bg-white rounded-xl border border-gray-200 p-6 mb-5">
+        <h2 class="text-sm font-semibold text-gray-900 mb-1.5">Federation Metadata Aggregates</h2>
+        <p class="text-xs text-gray-500 mb-4">One URL per line. These are fetched every 4 hours and SPs are auto-imported.</p>
+        <textarea name="tenant[metadataAggregateUrls]" rows="4"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none"
+                  placeholder="https://metadata.example.org/aggregate.xml">{{ tenant.metadataAggregateUrls|join('\n') }}</textarea>
+        <div class="mt-5">
+            <h3 class="text-sm font-semibold text-gray-900 mb-1.5">Publish To Federations</h3>
+            <p class="text-xs text-gray-500 mb-3">One federation slug per line. This tenant will appear in `/api/federation/{slug}/metadata` for matching slugs.</p>
+            <textarea name="tenant[publishedFederations]" rows="4"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none"
+                      placeholder="edugain&#10;africaconnect">{{ tenant.publishedFederations|join('\n') }}</textarea>
+            <p class="mt-2 text-xs text-gray-400">Use this to control which federation aggregates advertise the tenant IdP.</p>
+        </div>
+    </div>
+
+    {# ── Policies ─────────────────────────────────────────────── #}
+    <div class="bg-white rounded-xl border border-gray-200 p-6 mb-5">
+        <h2 class="text-sm font-semibold text-gray-900 mb-4">Policies</h2>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">MFA Policy</label>
+            <div class="flex gap-3">
+                {% for val, lbl in {none: 'None (no MFA)', optional: 'Optional', required: 'Required'} %}
+                <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                    <input type="radio" name="tenant[mfaPolicy]" value="{{ val }}"
+                           {{ tenant.mfaPolicy == val ? 'checked' : '' }}
+                           class="text-idp-500 focus:ring-idp-500">
+                    {{ lbl }}
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="mt-6">
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">Default Attribute Release Policy (JSON)</label>
+            <textarea name="tenant[attributeReleasePolicy]" rows="10"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none"
+                      placeholder="{}">{{ tenant.attributeReleasePolicy ? tenant.attributeReleasePolicy|json_encode(constant('JSON_PRETTY_PRINT')) : '{
+  "default": [
+    "uid",
+    "mail",
+    "displayName",
+    "eduPersonPrincipalName",
+    "eduPersonAffiliation",
+    "schacHomeOrganization"
+  ]
+}' }}</textarea>
+            <p class="mt-1 text-xs text-gray-500">
+                This is the tenant-wide default attribute list released to approved SPs. Individual SPs can still override it.
+            </p>
+        </div>
+    </div>
+
+    {# ── Admin Notes (super admin only) ──────────────────────── #}
+    {% if is_granted('ROLE_SUPER_ADMIN') %}
+    <div class="bg-white rounded-xl border border-gray-200 p-6 mb-5">
+        <h2 class="text-sm font-semibold text-gray-900 mb-3">Admin Notes (internal only)</h2>
+        <textarea name="tenant[adminNotes]" rows="3"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none"
+                  placeholder="Internal notes about this tenant…">{{ tenant.adminNotes }}</textarea>
+    </div>
+    {% endif %}
+
+    {# ── Submit ───────────────────────────────────────────────── #}
+    <div class="flex items-center gap-3">
+        <button type="submit"
+                class="px-6 py-2.5 bg-idp-500 hover:bg-idp-600 text-white font-medium rounded-lg text-sm shadow-sm transition">
+            {{ isNew ? 'Create Tenant' : 'Save Changes' }}
+        </button>
+        <a href="{{ isNew ? path('admin_tenant_index') : path('admin_tenant_show', {id: tenant.id}) }}"
+           class="px-4 py-2.5 text-sm text-gray-600 hover:text-gray-800">Cancel</a>
+    </div>
+</form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const authRadios = document.querySelectorAll('input[name="tenant[authType]"]');
+const ldapConfig = document.getElementById('ldap-config');
+const samlConfig = document.getElementById('saml-config');
+const radiusConfig = document.getElementById('radius-config');
+const authCards = Array.from(authRadios).map((radio) => radio.closest('label')).filter(Boolean);
+
+function syncAuthPanels() {
+    const selected = document.querySelector('input[name="tenant[authType]"]:checked');
+    const selectedValue = selected ? selected.value : '';
+
+    if (ldapConfig) {
+        ldapConfig.classList.toggle('hidden', selectedValue !== 'ldap');
+    }
+    if (samlConfig) {
+        samlConfig.classList.toggle('hidden', selectedValue !== 'saml');
+    }
+    if (radiusConfig) {
+        radiusConfig.classList.toggle('hidden', selectedValue !== 'radius');
+    }
+
+    authCards.forEach((card) => {
+        const radio = card.querySelector('input[name="tenant[authType]"]');
+        const active = radio && radio.checked;
+        card.classList.toggle('border-idp-500', active);
+        card.classList.toggle('bg-idp-50', active);
+        card.classList.toggle('border-gray-200', !active);
+    });
+}
+
+authRadios.forEach((radio) => radio.addEventListener('change', syncAuthPanels));
+syncAuthPanels();
+
+const eduroamToggle = document.querySelector('[data-eduroam-toggle]');
+const eduroamFields = document.querySelector('[data-eduroam-fields]');
+
+function syncEduroamFields() {
+    if (!eduroamToggle || !eduroamFields) {
+        return;
+    }
+
+    eduroamFields.classList.toggle('hidden', !eduroamToggle.checked);
+}
+
+if (eduroamToggle) {
+    eduroamToggle.addEventListener('change', syncEduroamFields);
+    syncEduroamFields();
+}
+
+// Auto-fill slug from name
+{% if isNew %}
+document.querySelector('[name="tenant[name]"]').addEventListener('input', function() {
+    const slugField = document.querySelector('[name="tenant[slug]"]');
+    if (!slugField.readOnly && !slugField.dataset.userEdited) {
+        slugField.value = this.value
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '')
+            .substring(0, 63);
+    }
+});
+document.querySelector('[name="tenant[slug]"]').addEventListener('input', function() {
+    this.dataset.userEdited = '1';
+});
+{% endif %}
+</script>
+{% endblock %}

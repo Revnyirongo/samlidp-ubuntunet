@@ -1,0 +1,12 @@
+{% extends 'bundles/TwigBundle/Exception/error.html.twig' %}
+
+{% block error_label %}Internal error{% endblock %}
+{% block error_kicker %}Service error{% endblock %}
+{% block error_title %}500 Internal Server Error{% endblock %}
+{% block error_sidecopy %}The platform accepted the request but failed while processing it internally.{% endblock %}
+{% block error_copy %}Retry the request once. If the same error returns, use the request ID below to trace the failure in application and web logs. This is usually caused by configuration, runtime, or downstream service issues rather than an input formatting problem in the browser.{% endblock %}
+{% block error_actions %}
+    <a href="/" class="rounded-2xl bg-idp-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-idp-500">Return Home</a>
+    <a href="/login" class="rounded-2xl border border-slate-300 px-5 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50">Open Login</a>
+{% endblock %}
+{% block error_help %}Use the request ID with container logs, Symfony logs, or reverse-proxy logs to locate the exact failure without exposing stack traces to end users.{% endblock %}

@@ -1,0 +1,48 @@
+{% extends 'security/_auth_layout.html.twig' %}
+
+{% block auth_title %}Request administrator access{% endblock %}
+{% block auth_subtitle %}Submit a self-registration request for tenant administration. Review notifications will be sent by email.{% endblock %}
+
+{% block auth_content %}
+<form method="post" class="space-y-5">
+    <input type="hidden" name="_token" value="{{ csrf_token('self_register') }}">
+    <div>
+        <label for="fullName" class="mb-1.5 block text-sm font-semibold text-slate-700">Full name</label>
+        <input id="fullName" name="registration[fullName]" type="text" required value="{{ formData.fullName }}"
+               class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-transparent focus:ring-2 focus:ring-idp-500">
+    </div>
+    <div>
+        <label for="email" class="mb-1.5 block text-sm font-semibold text-slate-700">Email address</label>
+        <input id="email" name="registration[email]" type="email" required value="{{ formData.email }}"
+               class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-transparent focus:ring-2 focus:ring-idp-500">
+    </div>
+    <div>
+        <label for="organizationName" class="mb-1.5 block text-sm font-semibold text-slate-700">Institution / organisation</label>
+        <input id="organizationName" name="registration[organizationName]" type="text" value="{{ formData.organizationName }}"
+               class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-transparent focus:ring-2 focus:ring-idp-500">
+    </div>
+    <div>
+        <label for="tenantId" class="mb-1.5 block text-sm font-semibold text-slate-700">Requested tenant</label>
+        <select id="tenantId" name="registration[tenantId]"
+                class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-transparent focus:ring-2 focus:ring-idp-500">
+            <option value="">Select tenant</option>
+            {% for tenant in tenants %}
+            <option value="{{ tenant.id }}" {{ formData.tenantId == tenant.id.toRfc4122 ? 'selected' : '' }}>{{ tenant.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <label for="message" class="mb-1.5 block text-sm font-semibold text-slate-700">Message</label>
+        <textarea id="message" name="registration[message]" rows="4"
+                  class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-transparent focus:ring-2 focus:ring-idp-500"
+                  placeholder="Briefly describe your role or why you need access.">{{ formData.message }}</textarea>
+    </div>
+    <button type="submit"
+            class="w-full rounded-2xl bg-idp-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-idp-500">
+        Submit request
+    </button>
+    <div class="text-center text-sm text-slate-500">
+        <a href="{{ path('app_login') }}" class="font-semibold text-idp-600 hover:underline">Back to sign in</a>
+    </div>
+</form>
+{% endblock %}

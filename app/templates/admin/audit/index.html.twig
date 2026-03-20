@@ -1,0 +1,107 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block page_title %}Audit Log{% endblock %}
+
+{% block content %}
+
+{# Filter bar #}
+<form method="get" class="flex items-center gap-3 mb-6">
+    <input type="text" name="action" value="{{ action }}"
+           placeholder="Filter by action (e.g. tenant, sp.approved)…"
+           class="flex-1 max-w-xs px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none">
+
+    {% if tenants|length > 1 %}
+    <select name="tenant"
+            class="border border-gray-300 rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none">
+        <option value="">All tenants</option>
+        {% for tenant in tenants %}
+        <option value="{{ tenant.id }}" {{ tenantId == tenant.id|string ? 'selected' : '' }}>
+            {{ tenant.name }}
+        </option>
+        {% endfor %}
+    </select>
+    {% endif %}
+
+    <button type="submit"
+            class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+        Filter
+    </button>
+    {% if action or tenantId %}
+    <a href="{{ path('admin_audit_log') }}" class="text-sm text-gray-500 hover:text-gray-700">Clear</a>
+    {% endif %}
+</form>
+
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    {% if pagination.totalItemCount == 0 %}
+    <div class="px-6 py-12 text-center text-gray-400 text-sm">No audit log entries found.</div>
+    {% else %}
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="bg-gray-50 border-b border-gray-200">
+                <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Time</th>
+                <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Action</th>
+                <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Entity</th>
+                <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">IP</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-50">
+            {% for entry in pagination %}
+            <tr class="hover:bg-gray-50">
+                <td class="px-5 py-3 text-xs text-gray-400 whitespace-nowrap">
+                    {{ entry.createdAt|date('Y-m-d H:i:s') }}
+                </td>
+                <td class="px-5 py-3">
+                    {% set actionColor = {
+                        'created': 'green', 'approved': 'green', 'activated': 'green',
+                        'deleted': 'red', 'suspended': 'red', 'revoked': 'red', 'deactivated': 'red',
+                        'updated': 'blue', 'refreshed': 'blue', 'regenerated': 'blue',
+                        'reset': 'amber',
+                    } %}
+                    {% set color = 'gray' %}
+                    {% for key, c in actionColor %}
+                        {% if key in entry.action %}{% set color = c %}{% endif %}
+                    {% endfor %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                        bg-{{ color }}-100 text-{{ color }}-700">
+                        {{ entry.action }}
+                    </span>
+                </td>
+                <td class="px-5 py-3 text-xs text-gray-500">
+                    {% if entry.entityType %}
+                        <span class="font-medium text-gray-700">{{ entry.entityType }}</span>
+                        {% if entry.data %}
+                            <span class="text-gray-400">
+                                — {{ entry.data|json_encode|slice(0, 80) }}
+                            </span>
+                        {% endif %}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td class="px-5 py-3 text-xs font-mono text-gray-400">
+                    {{ entry.ipAddress ?? '—' }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if pagination.pageCount > 1 %}
+    <div class="px-5 py-3.5 border-t border-gray-100 flex items-center justify-between text-sm text-gray-500">
+        <span>{{ pagination.totalItemCount }} entries</span>
+        <div class="flex items-center gap-1">
+            {% if pagination.currentPageNumber > 1 %}
+            <a href="{{ path('admin_audit_log', {page: pagination.currentPageNumber - 1, action: action, tenant: tenantId}) }}"
+               class="px-3 py-1 border border-gray-300 rounded-md hover:bg-gray-50">← Prev</a>
+            {% endif %}
+            <span class="px-3 py-1 text-gray-700">{{ pagination.currentPageNumber }} / {{ pagination.pageCount }}</span>
+            {% if pagination.currentPageNumber < pagination.pageCount %}
+            <a href="{{ path('admin_audit_log', {page: pagination.currentPageNumber + 1, action: action, tenant: tenantId}) }}"
+               class="px-3 py-1 border border-gray-300 rounded-md hover:bg-gray-50">Next →</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

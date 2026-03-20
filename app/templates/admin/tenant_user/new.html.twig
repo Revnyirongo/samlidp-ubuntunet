@@ -1,0 +1,27 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block page_title %}New Local User{% endblock %}
+
+{% block breadcrumb %}
+<nav class="text-sm text-gray-500 mt-1">
+    <a href="{{ path('admin_tenant_index') }}" class="hover:text-gray-700">Tenants</a>
+    <span class="mx-2">/</span>
+    <a href="{{ path('admin_tenant_show', {id: tenant.id}) }}" class="hover:text-gray-700">{{ tenant.name }}</a>
+    <span class="mx-2">/</span>
+    <a href="{{ path('admin_tenant_user_index', {tenant: tenant.id}) }}" class="hover:text-gray-700">Local Users</a>
+    <span class="mx-2">/</span>
+    <span class="text-gray-900">New</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl">
+    {% include 'admin/tenant_user/_form.html.twig' with {
+        tenant: tenant,
+        csrf_token_id: 'tenant_user_new_' ~ tenant.id,
+        formData: formData,
+        require_password: true,
+        submit_label: 'Create User'
+    } %}
+</div>
+{% endblock %}

@@ -1,0 +1,101 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block page_title %}{{ tenant.name }} Registration Requests{% endblock %}
+
+{% block breadcrumb %}
+<nav class="text-sm text-gray-500 mt-1">
+    <a href="{{ path('admin_tenant_index') }}" class="hover:text-gray-700">Tenants</a>
+    <span class="mx-2">/</span>
+    <a href="{{ path('admin_tenant_show', {id: tenant.id}) }}" class="hover:text-gray-700">{{ tenant.name }}</a>
+    <span class="mx-2">/</span>
+    <a href="{{ path('admin_tenant_user_index', {tenant: tenant.id}) }}" class="hover:text-gray-700">Local Users</a>
+    <span class="mx-2">/</span>
+    <span class="text-gray-900">Registration Requests</span>
+</nav>
+{% endblock %}
+
+{% block top_actions %}
+<a href="{{ path('admin_tenant_user_index', {tenant: tenant.id}) }}"
+   class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+    Back to Local Users
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <form method="get" class="flex items-center gap-3">
+        <select name="status"
+                class="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-transparent focus:ring-2 focus:ring-idp-500">
+            {% for value, label in {'pending': 'Pending', 'approved': 'Approved', 'rejected': 'Rejected', '': 'All'} %}
+            <option value="{{ value }}" {{ status == value ? 'selected' : '' }}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Filter</button>
+    </form>
+
+    <div class="overflow-hidden rounded-xl border border-gray-200 bg-white">
+        {% if pagination.totalItemCount == 0 %}
+        <div class="px-6 py-12 text-center text-sm text-gray-400">No tenant-user registration requests found.</div>
+        {% else %}
+        <table class="w-full text-sm">
+            <thead>
+            <tr class="border-b border-gray-200 bg-gray-50">
+                <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Requester</th>
+                <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Username</th>
+                <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Status</th>
+                <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Created</th>
+                <th class="px-5 py-3"></th>
+            </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+            {% for registration in pagination %}
+            <tr class="align-top">
+                <td class="px-5 py-4">
+                    <div class="font-medium text-gray-900">{{ registration.fullName }}</div>
+                    <div class="text-xs text-gray-500">{{ registration.email }}</div>
+                    {% if registration.affiliation %}
+                    <div class="mt-1 text-xs text-gray-500">{{ registration.affiliation }}</div>
+                    {% endif %}
+                    {% if registration.message %}
+                    <div class="mt-2 rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600">{{ registration.message }}</div>
+                    {% endif %}
+                </td>
+                <td class="px-5 py-4 text-gray-700">{{ registration.username }}</td>
+                <td class="px-5 py-4">
+                    <span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium
+                        {{ registration.status == 'pending' ? 'bg-amber-100 text-amber-800' :
+                           registration.status == 'approved' ? 'bg-green-100 text-green-800' :
+                           'bg-gray-100 text-gray-700' }}">
+                        {{ registration.status|upper }}
+                    </span>
+                    {% if registration.reviewNotes %}
+                    <div class="mt-2 text-xs text-gray-500">{{ registration.reviewNotes }}</div>
+                    {% endif %}
+                </td>
+                <td class="px-5 py-4 text-xs text-gray-500">{{ registration.createdAt|date('Y-m-d H:i') }}</td>
+                <td class="px-5 py-4 text-right">
+                    {% if registration.status == 'pending' %}
+                    <div class="space-y-2">
+                        <form method="post" action="{{ path('admin_tenant_registration_request_approve', {tenant: tenant.id, id: registration.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('approve-tenant-registration-' ~ registration.id) }}">
+                            <input type="text" name="reviewNotes" placeholder="Optional note"
+                                   class="mb-2 w-52 rounded-lg border border-gray-300 px-3 py-2 text-xs outline-none focus:border-transparent focus:ring-2 focus:ring-idp-500">
+                            <button type="submit" class="w-full rounded-lg bg-green-600 px-3 py-2 text-xs font-medium text-white hover:bg-green-700">Approve</button>
+                        </form>
+                        <form method="post" action="{{ path('admin_tenant_registration_request_reject', {tenant: tenant.id, id: registration.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('reject-tenant-registration-' ~ registration.id) }}">
+                            <input type="text" name="reviewNotes" placeholder="Reason"
+                                   class="mb-2 w-52 rounded-lg border border-gray-300 px-3 py-2 text-xs outline-none focus:border-transparent focus:ring-2 focus:ring-idp-500">
+                            <button type="submit" class="w-full rounded-lg bg-red-600 px-3 py-2 text-xs font-medium text-white hover:bg-red-700">Reject</button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

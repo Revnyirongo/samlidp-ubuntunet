@@ -1,0 +1,12 @@
+{% extends 'bundles/TwigBundle/Exception/error.html.twig' %}
+
+{% block error_label %}Access control{% endblock %}
+{% block error_kicker %}Access denied{% endblock %}
+{% block error_title %}403 Forbidden{% endblock %}
+{% block error_sidecopy %}You are signed in, but this account is not allowed to open the requested page or operation.{% endblock %}
+{% block error_copy %}Your session is valid, but the requested area requires a higher role or a different tenant scope. Try returning to a page you already had access to, or sign in with an account that has the required permissions.{% endblock %}
+{% block error_actions %}
+    <a href="/admin" class="rounded-2xl bg-idp-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-idp-500">Open Dashboard</a>
+    <a href="/login" class="rounded-2xl border border-slate-300 px-5 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50">Switch account</a>
+{% endblock %}
+{% block error_help %}If this page should be available to you, ask a super administrator or tenant administrator to confirm your assigned role and tenant permissions.{% endblock %}

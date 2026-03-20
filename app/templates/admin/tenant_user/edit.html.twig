@@ -1,0 +1,54 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block page_title %}Edit Local User{% endblock %}
+
+{% block breadcrumb %}
+<nav class="text-sm text-gray-500 mt-1">
+    <a href="{{ path('admin_tenant_index') }}" class="hover:text-gray-700">Tenants</a>
+    <span class="mx-2">/</span>
+    <a href="{{ path('admin_tenant_show', {id: tenant.id}) }}" class="hover:text-gray-700">{{ tenant.name }}</a>
+    <span class="mx-2">/</span>
+    <a href="{{ path('admin_tenant_user_index', {tenant: tenant.id}) }}" class="hover:text-gray-700">Local Users</a>
+    <span class="mx-2">/</span>
+    <span class="text-gray-900">{{ idpUser.username }}</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl">
+    {% if not mailer_enabled %}
+    <div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+        Invitation and password reset emails are disabled on this server. Configure <code>MAILER_DSN</code>, <code>MAILER_FROM_ADDRESS</code>, and <code>MAILER_FROM_NAME</code> before relying on tenant-user email workflows.
+    </div>
+    {% elseif idpUser.email %}
+    <div class="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+        If delivery to <strong>{{ idpUser.email }}</strong> fails, the platform will show a one-time fallback account setup or reset link you can copy manually.
+    </div>
+    {% endif %}
+
+    {% if idpUser.email %}
+    <div class="mb-6 flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <form method="post" action="{{ path('admin_tenant_user_send_invite', {tenant: tenant.id, user: idpUser.id}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('tenant_user_send_invite_' ~ idpUser.id) }}">
+            <button type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+                Send Invite
+            </button>
+        </form>
+        <form method="post" action="{{ path('admin_tenant_user_send_reset', {tenant: tenant.id, user: idpUser.id}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('tenant_user_send_reset_' ~ idpUser.id) }}">
+            <button type="submit" class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
+                Send Password Reset
+            </button>
+        </form>
+        <div class="text-sm text-slate-500">Emails will be sent to {{ idpUser.email }}.</div>
+    </div>
+    {% endif %}
+    {% include 'admin/tenant_user/_form.html.twig' with {
+        tenant: tenant,
+        csrf_token_id: 'tenant_user_edit_' ~ idpUser.id,
+        formData: formData,
+        require_password: false,
+        submit_label: 'Save Changes'
+    } %}
+</div>
+{% endblock %}

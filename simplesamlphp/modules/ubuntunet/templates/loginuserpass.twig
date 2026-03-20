@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% if pagetitle is defined and pagetitle %}{{ pagetitle|e }} | {% endif %}{{ tenant_name|default('UbuntuNet IdP')|e }}</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Manrope', sans-serif; }
+  {% if custom_css is defined and custom_css %}{{ custom_css|e('html') }}{% endif %}
+</style>
+</head>
+<body class="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(217,106,46,0.24),transparent_20rem),radial-gradient(circle_at_bottom_right,rgba(31,95,151,0.25),transparent_22rem),linear-gradient(135deg,#0f172a_0%,#13273c_100%)] flex items-center justify-center p-4">
+<div class="w-full max-w-md">
+  <div class="text-center mb-8">
+    {% if logo_url is defined and logo_url %}
+      <img src="{{ logo_url|e }}" alt="{{ tenant_name|default('Institution')|e }}" class="h-16 mx-auto mb-4 object-contain">
+    {% else %}
+      <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-orange-500 to-blue-700 rounded-2xl mb-4 shadow-lg text-white text-3xl font-bold">
+        {{ tenant_name|default('U')|slice(0, 1)|upper|e }}
+      </div>
+    {% endif %}
+    <h1 class="text-2xl font-bold text-white">{{ tenant_name|default('UbuntuNet IdP')|e }}</h1>
+    <p class="text-slate-400 text-sm mt-1">Sign in with your institutional credentials</p>
+  </div>
+
+  <div class="bg-white rounded-2xl shadow-2xl p-8">
+    {% if sp_name is defined and sp_name %}
+    <div class="mb-6 flex items-center gap-3 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
+      <svg class="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <div class="text-sm">
+        <span class="text-blue-700 font-medium">Signing in to: </span>
+        <span class="text-blue-800 font-semibold">{{ sp_name|e }}</span>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if errors is defined and errors %}
+    <div class="mb-5 bg-red-50 border border-red-200 rounded-xl px-4 py-3 space-y-2">
+      {% for error in errors %}
+      <p class="text-sm text-red-700 flex items-center gap-2">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        {{ error|e }}
+      </p>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" action="{{ formTarget|e }}" autocomplete="on" class="space-y-4">
+      {% if stateParams is defined %}
+        {% for name, value in stateParams %}
+          <input type="hidden" name="{{ name|e }}" value="{{ value|e }}">
+        {% endfor %}
+      {% endif %}
+
+      <div>
+        <label for="username" class="block text-sm font-medium text-gray-700 mb-1.5">
+          {{ usernameLabel|default('Username')|e }}
+        </label>
+        <input type="text"
+               id="username"
+               name="username"
+               value="{{ username|default('')|e }}"
+               autocomplete="username"
+               required
+               autofocus
+               class="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none transition"
+               placeholder="{{ usernamePlaceholder|default('username or email')|e }}">
+      </div>
+
+      <div>
+        <label for="password" class="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
+        <input type="password"
+               id="password"
+               name="password"
+               autocomplete="current-password"
+               required
+               class="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none transition"
+               placeholder="********">
+      </div>
+
+      {% if rememberMeEnabled is defined and rememberMeEnabled %}
+      <div class="flex items-center gap-2">
+        <input type="checkbox" id="remember" name="remember"
+               class="rounded border-gray-300 text-blue-600">
+        <label for="remember" class="text-sm text-gray-600">Remember me for 8 hours</label>
+      </div>
+      {% endif %}
+
+      <button type="submit"
+              class="w-full py-2.5 bg-blue-700 hover:bg-blue-600 active:bg-blue-800 text-white font-semibold rounded-xl text-sm transition shadow-sm mt-2">
+        Sign in
+      </button>
+    </form>
+
+    {% if (forgot_password_url is defined and forgot_password_url) or (register_url is defined and register_url) %}
+    <div class="mt-4 space-y-2 text-center">
+      {% if forgot_password_url is defined and forgot_password_url %}
+      <a href="{{ forgot_password_url|e }}" class="text-sm font-medium text-blue-700 hover:text-blue-800">
+        Forgot password?
+      </a>
+      {% endif %}
+      {% if register_url is defined and register_url %}
+      <div>
+        <a href="{{ register_url|e }}" class="text-sm font-medium text-blue-700 hover:text-blue-800">
+          Need an account? Create one
+        </a>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if helpUrl is defined and helpUrl %}
+    <div class="mt-5 text-center">
+      <a href="{{ helpUrl|e }}" target="_blank" rel="noopener"
+         class="text-xs text-gray-400 hover:text-gray-600">
+        Need help? Contact your IT helpdesk
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <p class="text-center text-xs text-slate-500 mt-6">
+    Powered by <a href="https://idp.ubuntunet.net" class="hover:text-slate-300">UbuntuNet IdP Service</a>
+    {% if privacy_url is defined and privacy_url %}&nbsp;·&nbsp;<a href="{{ privacy_url|e }}" class="hover:text-slate-300">Privacy</a>{% endif %}
+  </p>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var u = document.getElementById('username');
+    var p = document.getElementById('password');
+    if (u && !u.value) { u.focus(); }
+    else if (p) { p.focus(); }
+});
+</script>
+</body>
+</html>

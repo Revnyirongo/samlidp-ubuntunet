@@ -1,0 +1,12 @@
+{% extends 'bundles/TwigBundle/Exception/error.html.twig' %}
+
+{% block error_label %}Not found{% endblock %}
+{% block error_kicker %}Page not found{% endblock %}
+{% block error_title %}404 Not Found{% endblock %}
+{% block error_sidecopy %}The requested page, tenant route, or metadata endpoint could not be found from this address.{% endblock %}
+{% block error_copy %}Check the URL, tenant subdomain, and endpoint path. If you were expecting a metadata or SSO route, confirm that the tenant exists and that the endpoint was published from the platform.{% endblock %}
+{% block error_actions %}
+    <a href="/" class="rounded-2xl bg-idp-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-idp-500">Return Home</a>
+    <a href="/login" class="rounded-2xl border border-slate-300 px-5 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50">Open Login</a>
+{% endblock %}
+{% block error_help %}If this came from a service provider or federation metadata link, verify the tenant slug and endpoint path before retrying.{% endblock %}

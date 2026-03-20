@@ -1,0 +1,33 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on Keep a Changelog and this project follows Semantic Versioning.
+
+## [1.0.1] - 2026-03-20
+
+### Added
+- Tenant branding across admin, landing, and SSO login surfaces.
+- Tenant-local user invitation, reset, and self-registration flows.
+- Tenant-level eduroam authentication kit generation for managed database tenants.
+- Richer tenant and federation metadata fields suitable for federation publication.
+- Public landing page, branded error pages, and request ID surfacing.
+- Version header and release metadata wiring.
+
+### Changed
+- Hardened nginx routing for tenant subdomains and Docker-backed upstream resolution.
+- Improved SimpleSAMLphp tenant config generation for metadata, branding, and auth sources.
+- Improved SP metadata import, requested-attribute handling, and attribute release controls.
+- Improved email workflow reporting with clearer operator feedback on delivery failure.
+
+### Fixed
+- Intermittent `502 Bad Gateway` errors caused by stale or failed upstream resolution.
+- SSP 2.x compatibility issues in tenant authentication handlers.
+- Tenant metadata generation errors for newly created tenants.
+- Tenant logo rendering during SSO login.
+- Production deployment drift between local code and server images.
+
+## [1.0.0] - 2026-03-19
+
+### Added
+- First production-ready managed multitenant SAML IdP release for UbuntuNet Alliance.

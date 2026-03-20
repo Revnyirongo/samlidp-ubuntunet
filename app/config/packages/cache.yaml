@@ -1,0 +1,18 @@
+framework:
+    cache:
+        app: cache.adapter.redis
+        default_redis_provider: '%env(REDIS_URL)%'
+
+        pools:
+            # Separate pool for rate limiting
+            cache.rate_limiter:
+                adapter: cache.adapter.redis
+                default_lifetime: 1800
+
+    rate_limiter:
+        login_limiter:
+            policy: sliding_window
+            limit: 5
+            interval: '15 minutes'
+            lock_factory: lock.factory
+            cache_pool: cache.rate_limiter

@@ -1,0 +1,52 @@
+{% extends 'admin/base.html.twig' %}
+{% block page_title %}Service Providers{% endblock %}
+
+{% block content %}
+<form method="get" class="mb-6 flex flex-wrap items-center gap-3">
+    <input type="text" name="q" value="{{ q }}" placeholder="Search entity ID, name, or tenant"
+           class="w-full max-w-md rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-transparent focus:ring-2 focus:ring-idp-500">
+    <select name="approved"
+            class="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-transparent focus:ring-2 focus:ring-idp-500">
+        <option value="">All approval states</option>
+        <option value="1" {{ approved == '1' ? 'selected' : '' }}>Approved</option>
+        <option value="0" {{ approved == '0' ? 'selected' : '' }}>Unapproved</option>
+    </select>
+    <button type="submit" class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Filter</button>
+</form>
+
+<div class="overflow-hidden rounded-xl border border-gray-200 bg-white">
+    {% if pagination.totalItemCount == 0 %}
+        <div class="px-6 py-12 text-center text-sm text-gray-400">No service providers found.</div>
+    {% else %}
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="border-b border-gray-200 bg-gray-50">
+                    <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Service Provider</th>
+                    <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Tenant</th>
+                    <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Status</th>
+                    <th class="px-5 py-3"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for sp in pagination %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-5 py-3.5">
+                            <div class="font-medium text-gray-900">{{ sp.displayName }}</div>
+                            <div class="text-xs text-gray-400">{{ sp.entityId }}</div>
+                        </td>
+                        <td class="px-5 py-3.5 text-gray-700">{{ sp.tenant.name }}</td>
+                        <td class="px-5 py-3.5">
+                            <span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium {{ sp.approved ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700' }}">
+                                {{ sp.approved ? 'Approved' : 'Pending' }}
+                            </span>
+                        </td>
+                        <td class="px-5 py-3.5 text-right">
+                            <a href="{{ path('admin_sp_show', {id: sp.id}) }}" class="text-xs text-idp-600 hover:underline">Details</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+</div>
+{% endblock %}
