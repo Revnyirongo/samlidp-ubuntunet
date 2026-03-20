@@ -105,7 +105,7 @@ function ubuntunetNormalizeLogoUrl(?string $logoUrl): ?string
     }
 
     $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-    $host = $_SERVER['HTTP_HOST'] ?? getenv('SAMLIDP_HOSTNAME') ?: 'idp.ubuntunet.net';
+    $host = $_SERVER['HTTP_HOST'] ?? getenv('SAMLIDP_HOSTNAME') ?: 'example.com';
 
     return sprintf('%s://%s%s', $scheme, $host, $logoUrl);
 }
@@ -170,9 +170,10 @@ $t->data['errors']      = $errors;
 $t->data['username']    = $_POST['username'] ?? '';
 $tenantSlug = $state['ubuntunet:TenantSlug'] ?? (method_exists($source, 'getTenantSlug') ? $source->getTenantSlug() : null);
 $branding = ubuntunetTenantBranding(is_string($tenantSlug) ? $tenantSlug : null);
-$t->data['tenant_name'] = $branding['name'] ?? getenv('TENANT_NAME') ?: 'UbuntuNet IdP';
+$t->data['tenant_name'] = $branding['name'] ?? getenv('TENANT_NAME') ?: 'Managed IdP';
 $t->data['logo_url']    = $branding['logo_url'] ?? getenv('TENANT_LOGO_URL') ?: null;
 $t->data['custom_css']  = $branding['custom_css'] ?? getenv('TENANT_CUSTOM_CSS') ?: null;
 $t->data['helpUrl']     = $branding['help_url'] ?? null;
+$t->data['service_home_url'] = sprintf('%s://%s', (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http', $_SERVER['HTTP_HOST'] ?? (getenv('SAMLIDP_HOSTNAME') ?: 'example.com'));
 $t->data['forgot_password_url'] = is_string($tenantSlug) && $tenantSlug !== '' ? '/tenant/' . rawurlencode($tenantSlug) . '/forgot-password' : null;
 $t->send();

@@ -16,8 +16,8 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./conf/credentials/wildcard_certificate.crt:/etc/ssl/certs/idp.ubuntunet.net.crt:ro
-      - ./conf/credentials/wildcard_certificate.key:/etc/ssl/private/idp.ubuntunet.net.key:ro
+      - ./conf/credentials/wildcard_certificate.crt:/etc/ssl/certs/managedidp.crt:ro
+      - ./conf/credentials/wildcard_certificate.key:/etc/ssl/private/managedidp.key:ro
       - ./app/public:/var/www/html/public:ro
       - tenant_uploads:/var/www/html/public/uploads
       - nginx_logs:/var/log/nginx
@@ -50,11 +50,11 @@ services:
       MAILER_DSN: ${MAILER_DSN}
       MAILER_FROM_ADDRESS: ${MAILER_FROM_ADDRESS}
       MAILER_FROM_NAME: ${MAILER_FROM_NAME}
-      SAMLIDP_HOSTNAME: ${SAMLIDP_HOSTNAME:-idp.ubuntunet.net}
+      SAMLIDP_HOSTNAME: ${SAMLIDP_HOSTNAME:-example.com}
       VAULT_PASS: ${VAULT_PASS}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:-127.0.0.1,REMOTE_ADDR}
-      TRUSTED_HOSTS: ${TRUSTED_HOSTS:-'^(idp\.ubuntunet\.net|.*\.idp\.ubuntunet\.net)$'}
+      TRUSTED_HOSTS: ${TRUSTED_HOSTS:-'^(example\.com|.*\.example\.com)$'}
     volumes:
       - ./.env:/var/www/html/.env:ro
       - app_var:/var/www/html/var
@@ -83,7 +83,7 @@ services:
     container_name: samlidp_ssp
     restart: unless-stopped
     environment:
-      SAMLIDP_HOSTNAME: ${SAMLIDP_HOSTNAME:-idp.ubuntunet.net}
+      SAMLIDP_HOSTNAME: ${SAMLIDP_HOSTNAME:-example.com}
       VAULT_PASS: ${VAULT_PASS}
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
@@ -126,11 +126,11 @@ services:
       MAILER_DSN: ${MAILER_DSN}
       MAILER_FROM_ADDRESS: ${MAILER_FROM_ADDRESS}
       MAILER_FROM_NAME: ${MAILER_FROM_NAME}
-      SAMLIDP_HOSTNAME: ${SAMLIDP_HOSTNAME:-idp.ubuntunet.net}
+      SAMLIDP_HOSTNAME: ${SAMLIDP_HOSTNAME:-example.com}
       VAULT_PASS: ${VAULT_PASS}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:-127.0.0.1,REMOTE_ADDR}
-      TRUSTED_HOSTS: ${TRUSTED_HOSTS:-'^(idp\.ubuntunet\.net|.*\.idp\.ubuntunet\.net)$'}
+      TRUSTED_HOSTS: ${TRUSTED_HOSTS:-'^(example\.com|.*\.example\.com)$'}
     volumes:
       - ./.env:/var/www/html/.env:ro
       - app_var:/var/www/html/var
@@ -170,11 +170,11 @@ services:
       MAILER_DSN: ${MAILER_DSN}
       MAILER_FROM_ADDRESS: ${MAILER_FROM_ADDRESS}
       MAILER_FROM_NAME: ${MAILER_FROM_NAME}
-      SAMLIDP_HOSTNAME: ${SAMLIDP_HOSTNAME:-idp.ubuntunet.net}
+      SAMLIDP_HOSTNAME: ${SAMLIDP_HOSTNAME:-example.com}
       VAULT_PASS: ${VAULT_PASS}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:-127.0.0.1,REMOTE_ADDR}
-      TRUSTED_HOSTS: ${TRUSTED_HOSTS:-'^(idp\.ubuntunet\.net|.*\.idp\.ubuntunet\.net)$'}
+      TRUSTED_HOSTS: ${TRUSTED_HOSTS:-'^(example\.com|.*\.example\.com)$'}
     volumes:
       - ./.env:/var/www/html/.env:ro
       - app_var:/var/www/html/var

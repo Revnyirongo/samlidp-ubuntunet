@@ -87,7 +87,7 @@
                         {% endif %}
                         <div>
                             <div class="font-medium text-gray-900">{{ tenant.name }}</div>
-                            <div class="text-xs text-gray-400 font-mono">{{ tenant.slug }}.idp.ubuntunet.net</div>
+                            <div class="text-xs text-gray-400 font-mono">{{ tenant.slug }}.{{ app.request.host }}</div>
                             {% if tenant.publishedFederations is not empty %}
                             <div class="mt-1 flex flex-wrap gap-1.5">
                                 {% for federation in tenant.publishedFederations|slice(0, 3) %}

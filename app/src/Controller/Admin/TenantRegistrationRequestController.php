@@ -259,7 +259,7 @@ class TenantRegistrationRequestController extends AbstractController
             }
         }
 
-        return strtolower($tenant->getSlug() . '.idp.ubuntunet.net');
+        return strtolower($tenant->getTenantHostname());
     }
 
     private function guessGivenName(string $fullName): ?string

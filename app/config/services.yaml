@@ -39,7 +39,7 @@ services:
                 verify_peer: true
                 verify_host: true
                 headers:
-                    User-Agent: 'UbuntuNet-SAML-IdP/2.0 (+https://idp.ubuntunet.net)'
+                    User-Agent: 'Managed-SAML-IdP/2.0 (+https://example.com)'
 
     App\Service\MetadataService:
         arguments:

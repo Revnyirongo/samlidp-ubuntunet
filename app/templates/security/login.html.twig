@@ -125,7 +125,7 @@
                                    autocomplete="email"
                                    required
                                    class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-transparent focus:ring-2 focus:ring-idp-500"
-                                   placeholder="admin@ubuntunet.net">
+                                   placeholder="admin@example.com">
                         </div>
 
                         <div>
@@ -157,7 +157,7 @@
                     </form>
 
                     <div class="mt-8 border-t border-slate-200 pt-5 text-xs leading-5 text-slate-400">
-                        idp.ubuntunet.net<br>
+                        {{ app.request.host }}<br>
                         Multitenant SAML Identity Provider Service
                     </div>
                 </div>

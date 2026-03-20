@@ -48,7 +48,7 @@ class MetadataServiceTest extends TestCase
             logger:          new NullLogger(),
             cache:           $cache,
             configWriter:    $configWriter,
-            samlidpHostname: 'idp.ubuntunet.net',
+            samlidpHostname: 'example.com',
         );
     }
 

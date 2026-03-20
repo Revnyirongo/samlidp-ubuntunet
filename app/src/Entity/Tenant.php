@@ -16,7 +16,7 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * Represents one institution's IdP (a "tenant").
- * Each tenant gets a subdomain: <slug>.idp.ubuntunet.net
+ * Each tenant gets a subdomain based on the configured platform hostname.
  */
 #[ORM\Entity(repositoryClass: TenantRepository::class)]
 #[ORM\Table(name: 'tenants')]
@@ -42,7 +42,7 @@ class Tenant
     private ?Uuid $id = null;
 
     /**
-     * URL-safe slug used for the subdomain, e.g. "university" -> university.idp.ubuntunet.net
+     * URL-safe slug used for the subdomain, e.g. "university" -> university.example.com
      */
     #[ORM\Column(length: 63, unique: true)]
     #[Assert\NotBlank]
@@ -205,7 +205,7 @@ class Tenant
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
         if (empty($this->entityId)) {
-            $this->entityId = 'https://' . $this->slug . '.idp.ubuntunet.net/saml2/idp/metadata.php';
+            $this->entityId = 'https://' . $this->getTenantHostname() . '/saml2/idp/metadata.php';
         }
     }
 
@@ -429,7 +429,7 @@ class Tenant
 
     public function getIdpUrl(): string
     {
-        return 'https://' . $this->slug . '.idp.ubuntunet.net';
+        return 'https://' . $this->getTenantHostname();
     }
 
     public function getSsoUrl(): string
@@ -450,5 +450,17 @@ class Tenant
     public function __toString(): string
     {
         return $this->name . ' (' . $this->slug . ')';
+    }
+
+    public function getTenantHostname(): string
+    {
+        return $this->slug . '.' . self::resolvePlatformHostname();
+    }
+
+    private static function resolvePlatformHostname(): string
+    {
+        $hostname = $_ENV['SAMLIDP_HOSTNAME'] ?? getenv('SAMLIDP_HOSTNAME') ?: 'example.com';
+
+        return strtolower(trim((string) $hostname));
     }
 }

@@ -17,7 +17,7 @@ final class FederationMetadataControllerTest extends TestCase
         $tenant = (new Tenant())
             ->setSlug('makerere')
             ->setName('Makerere University')
-            ->setEntityId('https://makerere.idp.ubuntunet.net/saml2/idp/metadata.php')
+            ->setEntityId('https://makerere.example.com/saml2/idp/metadata.php')
             ->setStatus(Tenant::STATUS_ACTIVE)
             ->setOrganizationName('Makerere University')
             ->setOrganizationUrl('https://mak.ac.ug')
@@ -32,8 +32,8 @@ final class FederationMetadataControllerTest extends TestCase
                 'security_contact_name' => 'CERT',
                 'security_contact_email' => 'security@mak.ac.ug',
                 'privacy_statement_url' => 'https://mak.ac.ug/privacy',
-                'registration_authority' => 'https://idp.ubuntunet.net',
-                'registration_policy_url' => 'https://idp.ubuntunet.net/federation/metadata-registration-practice-statement',
+                'registration_authority' => 'https://example.com',
+                'registration_policy_url' => 'https://example.com/federation/metadata-registration-practice-statement',
                 'domain_hints' => ['mak.ac.ug'],
                 'scopes' => ['mak.ac.ug'],
             ]);
@@ -43,8 +43,8 @@ final class FederationMetadataControllerTest extends TestCase
 
         $controller = new FederationMetadataController(
             $repo,
-            new TenantMetadataProfileBuilder('idp.ubuntunet.net'),
-            'idp.ubuntunet.net',
+            new TenantMetadataProfileBuilder('example.com'),
+            'example.com',
         );
 
         $response = $controller->tenantMetadata('makerere');
@@ -64,7 +64,7 @@ final class FederationMetadataControllerTest extends TestCase
         $tenant = (new Tenant())
             ->setSlug('nust')
             ->setName('NUST')
-            ->setEntityId('https://nust.idp.ubuntunet.net/saml2/idp/metadata.php')
+            ->setEntityId('https://nust.example.com/saml2/idp/metadata.php')
             ->setStatus(Tenant::STATUS_ACTIVE)
             ->setTechnicalContactEmail('ops@nust.na');
 
@@ -73,8 +73,8 @@ final class FederationMetadataControllerTest extends TestCase
 
         $controller = new FederationMetadataController(
             $repo,
-            new TenantMetadataProfileBuilder('idp.ubuntunet.net'),
-            'idp.ubuntunet.net',
+            new TenantMetadataProfileBuilder('example.com'),
+            'example.com',
         );
 
         $response = $controller->aggregate();

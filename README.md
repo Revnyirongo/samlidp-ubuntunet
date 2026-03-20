@@ -4,7 +4,7 @@ Production-grade multitenant SAML 2.0 identity provider software for the researc
 
 ## Release
 
-- Version: `1.0.2`
+- Version: `1.0.3`
 - Repository: `https://github.com/Revnyirongo/samlidp-ubuntunet`
 - Documentation: `https://gitlab.ubuntunet.net/`
 
@@ -20,7 +20,7 @@ Production-grade multitenant SAML 2.0 identity provider software for the researc
 Each tenant is exposed on its own subdomain:
 
 ```text
-https://<tenant-slug>.idp.ubuntunet.net
+https://<tenant-slug>.example.com
 ```
 
 ## Core Capabilities
@@ -53,8 +53,8 @@ make deploy-first
 
 - Docker Engine 25+
 - Docker Compose V2
-- wildcard DNS for `*.idp.ubuntunet.net`
-- TLS certificate covering both `idp.ubuntunet.net` and `*.idp.ubuntunet.net`
+- wildcard DNS for `*.example.com`
+- TLS certificate covering both `example.com` and `*.example.com`
 - at least 4 GB RAM and 20 GB storage
 
 ## Initial Access
@@ -62,7 +62,7 @@ make deploy-first
 After the first deployment, sign in through:
 
 ```text
-https://idp.ubuntunet.net/login
+https://example.com/login
 ```
 
 Set a strong administrator password immediately after first access.
@@ -72,7 +72,7 @@ Set a strong administrator password immediately after first access.
 Tenant onboarding is handled from the admin portal:
 
 ```text
-https://idp.ubuntunet.net/admin/tenants/new
+https://example.com/admin/tenants/new
 ```
 
 The tenant form supports:
@@ -97,10 +97,10 @@ Imported metadata is validated before persistence and can be approved per tenant
 
 ## Operational Endpoints
 
-- health check: `https://idp.ubuntunet.net/healthz`
-- tenant metadata: `https://<tenant-slug>.idp.ubuntunet.net/saml2/idp/metadata.php`
-- tenant SSO service: `https://<tenant-slug>.idp.ubuntunet.net/saml2/idp/SSOService.php`
-- federation aggregate metadata: `https://idp.ubuntunet.net/api/federation/{slug}/metadata`
+- health check: `https://example.com/healthz`
+- tenant metadata: `https://<tenant-slug>.example.com/saml2/idp/metadata.php`
+- tenant SSO service: `https://<tenant-slug>.example.com/saml2/idp/SSOService.php`
+- federation aggregate metadata: `https://example.com/api/federation/{slug}/metadata`
 
 ## Repository Standards
 

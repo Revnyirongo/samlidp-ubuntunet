@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and this project follows Semantic Versioning.
 
+## [1.0.3] - 2026-03-20
+
+### Changed
+- Replaced UbuntuNet deployment hostname examples with `example.com` placeholders across documentation, templates, defaults, and tests.
+- Switched generated tenant URLs to use the configured `SAMLIDP_HOSTNAME` instead of a hardcoded deployment hostname.
+- Updated deploy defaults and certificate mount names to use neutral example-oriented naming.
+
 ## [1.0.2] - 2026-03-20
 
 ### Changed

@@ -63,7 +63,7 @@ class TenantControllerTest extends WebTestCase
             ->setName('eduroam Test')
             ->setStatus(Tenant::STATUS_ACTIVE)
             ->setAuthType(Tenant::AUTH_DATABASE)
-            ->setEntityId('https://eduroamtest.idp.ubuntunet.net/saml2/idp/metadata.php')
+            ->setEntityId('https://eduroamtest.example.com/saml2/idp/metadata.php')
             ->setEduroamProfile(['realm' => 'example.ac.ke']);
 
         $em->persist($tenant);

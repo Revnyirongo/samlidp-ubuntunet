@@ -607,8 +607,8 @@ class TenantController extends AbstractController
 
         $profile['display_name'] ??= $orgName !== '' ? $orgName . ' Identity Provider' : null;
         $profile['description'] ??= $orgName !== '' ? sprintf('Federated identity provider for %s.', $orgName) : null;
-        $profile['registration_authority'] ??= 'https://idp.ubuntunet.net';
-        $profile['registration_policy_url'] ??= 'https://idp.ubuntunet.net/federation/metadata-registration-practice-statement';
+        $profile['registration_authority'] ??= 'https://' . $this->samlidpHostname;
+        $profile['registration_policy_url'] ??= 'https://' . $this->samlidpHostname . '/federation/metadata-registration-practice-statement';
 
         if (($profile['information_url'] ?? '') === '' && $orgUrl !== '') {
             $profile['information_url'] = $orgUrl;

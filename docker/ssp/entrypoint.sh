@@ -47,7 +47,7 @@ cat > "${CONFIG_DIR}/config.php" << EOF
     'tempdir'           => '/tmp/ssp-temp/',
 
     'technicalcontact_name'  => 'UbuntuNet IdP Admins',
-    'technicalcontact_email' => 'idp-admin@ubuntunet.net',
+    'technicalcontact_email' => 'idp-admin@example.com',
 
     'timezone'       => 'Africa/Nairobi',
     'secretsalt'     => '${SSP_SECRET_SALT}',

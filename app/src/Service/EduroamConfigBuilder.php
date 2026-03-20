@@ -84,7 +84,7 @@ final class EduroamConfigBuilder
             }
         }
 
-        return strtolower($tenant->getSlug() . '.idp.ubuntunet.net');
+        return strtolower($tenant->getTenantHostname());
     }
 
     private function normalizeEapMethod(?string $value): string

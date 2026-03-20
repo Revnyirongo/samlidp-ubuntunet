@@ -78,7 +78,7 @@ class TenantProvisioner
         $email = (new Email())
             ->from(sprintf('"%s" <%s>', $this->mailerFromName, $this->mailerFromAddress))
             ->to($tenant->getTechnicalContactEmail())
-            ->subject(sprintf('[UbuntuNet IdP] Your IdP "%s" is ready', $tenant->getName()))
+            ->subject(sprintf('[Managed IdP] Your IdP "%s" is ready', $tenant->getName()))
             ->html($this->buildWelcomeHtml($tenant))
             ->text($this->buildWelcomeText($tenant));
 
@@ -100,11 +100,11 @@ class TenantProvisioner
 <head><meta charset="UTF-8"><title>Your IdP is Ready</title></head>
 <body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
   <div style="background:#1a365d; padding:20px; border-radius:8px 8px 0 0;">
-    <h1 style="color:#fff; margin:0; font-size:22px;">🎉 Your UbuntuNet IdP is Ready</h1>
+    <h1 style="color:#fff; margin:0; font-size:22px;">Your Managed IdP Is Ready</h1>
   </div>
   <div style="border:1px solid #ddd; border-top:none; padding:24px; border-radius:0 0 8px 8px;">
     <p>Dear {$greeting},</p>
-    <p>Your SAML Identity Provider for <strong>{$name}</strong> has been provisioned successfully on the UbuntuNet IdP service.</p>
+    <p>Your SAML Identity Provider for <strong>{$name}</strong> has been provisioned successfully.</p>
 
     <h2 style="color:#1a365d; font-size:16px;">Your IdP Details</h2>
     <table style="border-collapse:collapse; width:100%;">
@@ -132,8 +132,7 @@ class TenantProvisioner
 
     <hr style="border:none; border-top:1px solid #eee; margin:24px 0;">
     <p style="font-size:12px; color:#666;">
-      This message was sent by the UbuntuNet IdP service at <a href="https://{$this->samlidpHostname}">{$this->samlidpHostname}</a>.<br>
-      For support, contact <a href="mailto:idp-support@ubuntunet.net">idp-support@ubuntunet.net</a>.
+      This message was sent by the managed identity platform at <a href="https://{$this->samlidpHostname}">{$this->samlidpHostname}</a>.
     </p>
   </div>
 </body>
@@ -144,12 +143,11 @@ HTML;
     private function buildWelcomeText(Tenant $tenant): string
     {
         return sprintf(
-            "Your UbuntuNet SAML IdP for %s is ready.\n\n" .
+            "Your SAML IdP for %s is ready.\n\n" .
             "IdP URL:      %s\n" .
             "Metadata URL: %s\n" .
             "SSO URL:      %s\n\n" .
-            "Log in to the admin portal at https://%s/admin to configure your LDAP backend and register Service Providers.\n\n" .
-            "For support: idp-support@ubuntunet.net\n",
+            "Log in to the admin portal at https://%s/admin to configure your backend and register service providers.\n",
             $tenant->getName(),
             $tenant->getIdpUrl(),
             $tenant->getMetadataUrl(),

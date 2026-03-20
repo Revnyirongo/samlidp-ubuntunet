@@ -22,17 +22,17 @@ final class SimpleSamlphpConfigWriterTest extends TestCase
             $this->createMock(TenantRepository::class),
             $this->createMock(LockFactory::class),
             new NullLogger(),
-            new TenantMetadataProfileBuilder('idp.ubuntunet.net'),
+            new TenantMetadataProfileBuilder('example.com'),
             '/tmp/config',
             '/tmp/metadata',
             '/tmp/cert',
-            'idp.ubuntunet.net',
+            'example.com',
         );
 
         $tenant = (new Tenant())
             ->setSlug('university-of-africa')
             ->setName('University of Africa')
-            ->setEntityId('https://university-of-africa.idp.ubuntunet.net/saml2/idp/metadata.php')
+            ->setEntityId('https://university-of-africa.example.com/saml2/idp/metadata.php')
             ->setStatus(Tenant::STATUS_ACTIVE)
             ->setOrganizationName('University of Africa')
             ->setOrganizationUrl('https://www.university.example')
@@ -49,8 +49,8 @@ final class SimpleSamlphpConfigWriterTest extends TestCase
                 'security_contact_email' => 'security@university.example',
                 'domain_hints' => ['university.example'],
                 'scopes' => ['university.example'],
-                'registration_authority' => 'https://idp.ubuntunet.net',
-                'registration_policy_url' => 'https://idp.ubuntunet.net/federation/metadata-registration-practice-statement',
+                'registration_authority' => 'https://example.com',
+                'registration_policy_url' => 'https://example.com/federation/metadata-registration-practice-statement',
             ]);
 
         $method = new \ReflectionMethod($writer, 'buildIdpHostedBlock');
@@ -58,8 +58,8 @@ final class SimpleSamlphpConfigWriterTest extends TestCase
         $block = (string) $method->invoke($writer, $tenant);
 
         $this->assertStringContainsString("'RegistrationInfo' => [", $block);
-        $this->assertStringContainsString("'authority' => 'https://idp.ubuntunet.net'", $block);
-        $this->assertStringContainsString("'policies' => ['en' => 'https://idp.ubuntunet.net/federation/metadata-registration-practice-statement']", $block);
+        $this->assertStringContainsString("'authority' => 'https://example.com'", $block);
+        $this->assertStringContainsString("'policies' => ['en' => 'https://example.com/federation/metadata-registration-practice-statement']", $block);
         $this->assertStringContainsString('metadata-registration-practice-statement', $block);
         $this->assertStringContainsString("'DiscoHints' => [", $block);
         $this->assertStringContainsString("'DomainHint' => [", $block);

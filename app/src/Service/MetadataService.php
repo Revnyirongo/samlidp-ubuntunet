@@ -513,9 +513,8 @@ class MetadataService
     private function generateSelfSignedCert(\OpenSSLAsymmetricKey $key, Tenant $tenant): string
     {
         $dn = [
-            'commonName'            => $tenant->getSlug() . '.idp.ubuntunet.net',
-            'organizationName'      => $tenant->getOrganizationName() ?? 'UbuntuNet',
-            'countryName'           => 'ZM', // default Zambia (UbuntuNet HQ)
+            'commonName'            => $tenant->getTenantHostname(),
+            'organizationName'      => $tenant->getOrganizationName() ?? 'Managed Identity Platform',
         ];
 
         $csr  = openssl_csr_new($dn, $key);

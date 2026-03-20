@@ -21,7 +21,7 @@ class InitialAdminFixture extends Fixture
 
     public function load(ObjectManager $manager): void
     {
-        $email    = $_ENV['INITIAL_ADMIN_EMAIL']    ?? 'admin@idp.ubuntunet.net';
+        $email    = $_ENV['INITIAL_ADMIN_EMAIL']    ?? 'admin@example.com';
         $password = $_ENV['INITIAL_ADMIN_PASSWORD'] ?? 'ChangeMe123!';
         $name     = $_ENV['INITIAL_ADMIN_NAME']     ?? 'UbuntuNet Super Admin';
 

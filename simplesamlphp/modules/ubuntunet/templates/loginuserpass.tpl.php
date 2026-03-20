@@ -120,7 +120,7 @@
 
   {# Footer #}
   <p class="text-center text-xs text-slate-500 mt-6">
-    Powered by <a href="https://idp.ubuntunet.net" class="hover:text-slate-300">UbuntuNet IdP Service</a>
+    Powered by <a href="{$service_home_url|default:'#'|escape}" class="hover:text-slate-300">Managed IdP Service</a>
     {if isset($privacy_url)}&nbsp;·&nbsp;<a href="{$privacy_url|escape}" class="hover:text-slate-300">{t}Privacy{/t}</a>{/if}
   </p>
 </div>
