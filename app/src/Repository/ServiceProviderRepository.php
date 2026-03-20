@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\ServiceProvider;
 use App\Entity\Tenant;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -75,6 +76,32 @@ class ServiceProviderRepository extends ServiceEntityRepository
     /**
      * @return ServiceProvider[]
      */
+    public function findExpiringSoonByUser(User $user, int $days = 30): array
+    {
+        if ($user->isSuperAdmin()) {
+            return $this->findExpiringSoon($days);
+        }
+
+        $threshold = (new \DateTimeImmutable())->modify("+{$days} days");
+
+        return $this->createQueryBuilder('sp')
+            ->innerJoin('sp.tenant', 't')
+            ->innerJoin('t.admins', 'a')
+            ->where('a = :user')
+            ->andWhere('sp.certificateExpiresAt IS NOT NULL')
+            ->andWhere('sp.certificateExpiresAt <= :threshold')
+            ->andWhere('sp.certificateExpiresAt >= :now')
+            ->setParameter('user', $user)
+            ->setParameter('threshold', $threshold)
+            ->setParameter('now', new \DateTimeImmutable())
+            ->orderBy('sp.certificateExpiresAt', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return ServiceProvider[]
+     */
     public function findExpired(): array
     {
         return $this->createQueryBuilder('sp')
@@ -92,6 +119,25 @@ class ServiceProviderRepository extends ServiceEntityRepository
             ->where('sp.tenant = :tenant')
             ->andWhere('sp.approved = true')
             ->setParameter('tenant', $tenant)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    public function countByUser(User $user): int
+    {
+        if ($user->isSuperAdmin()) {
+            return (int) $this->createQueryBuilder('sp')
+                ->select('COUNT(sp.id)')
+                ->getQuery()
+                ->getSingleScalarResult();
+        }
+
+        return (int) $this->createQueryBuilder('sp')
+            ->select('COUNT(sp.id)')
+            ->innerJoin('sp.tenant', 't')
+            ->innerJoin('t.admins', 'a')
+            ->where('a = :user')
+            ->setParameter('user', $user)
             ->getQuery()
             ->getSingleScalarResult();
     }

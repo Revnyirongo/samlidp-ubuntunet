@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\Tenant;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -35,6 +36,51 @@ class TenantRepository extends ServiceEntityRepository
     public function findAllActive(): array
     {
         return $this->findBy(['status' => Tenant::STATUS_ACTIVE], ['name' => 'ASC']);
+    }
+
+    /**
+     * @return Tenant[]
+     */
+    public function findManagedByUser(User $user): array
+    {
+        if ($user->isSuperAdmin()) {
+            return $this->findBy([], ['name' => 'ASC']);
+        }
+
+        return $this->createQueryBuilder('t')
+            ->innerJoin('t.admins', 'a')
+            ->where('a = :user')
+            ->setParameter('user', $user)
+            ->orderBy('t.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function countByStatusForUser(User $user): array
+    {
+        if ($user->isSuperAdmin()) {
+            return $this->countByStatus();
+        }
+
+        $results = $this->createQueryBuilder('t')
+            ->select('t.status, COUNT(t.id) as cnt')
+            ->innerJoin('t.admins', 'a')
+            ->where('a = :user')
+            ->setParameter('user', $user)
+            ->groupBy('t.status')
+            ->getQuery()
+            ->getArrayResult();
+
+        $map = [
+            Tenant::STATUS_ACTIVE    => 0,
+            Tenant::STATUS_PENDING   => 0,
+            Tenant::STATUS_SUSPENDED => 0,
+        ];
+        foreach ($results as $row) {
+            $map[$row['status']] = (int) $row['cnt'];
+        }
+
+        return $map;
     }
 
     /**

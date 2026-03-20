@@ -30,25 +30,25 @@ final class SimpleSamlphpConfigWriterTest extends TestCase
         );
 
         $tenant = (new Tenant())
-            ->setSlug('uon')
-            ->setName('University of Nairobi')
-            ->setEntityId('https://uon.idp.ubuntunet.net/saml2/idp/metadata.php')
+            ->setSlug('university-of-africa')
+            ->setName('University of Africa')
+            ->setEntityId('https://university-of-africa.idp.ubuntunet.net/saml2/idp/metadata.php')
             ->setStatus(Tenant::STATUS_ACTIVE)
-            ->setOrganizationName('University of Nairobi')
-            ->setOrganizationUrl('https://uonbi.ac.ke')
-            ->setLogoUrl('https://uonbi.ac.ke/logo.png')
+            ->setOrganizationName('University of Africa')
+            ->setOrganizationUrl('https://www.university.example')
+            ->setLogoUrl('https://www.university.example/logo.png')
             ->setTechnicalContactName('Operations Team')
-            ->setTechnicalContactEmail('ops@uonbi.ac.ke')
+            ->setTechnicalContactEmail('ops@university.example')
             ->setPublishedFederations(['edugain'])
             ->setMetadataProfile([
                 'description' => 'Federated identity provider for the university',
-                'privacy_statement_url' => 'https://uonbi.ac.ke/privacy',
+                'privacy_statement_url' => 'https://www.university.example/privacy',
                 'support_contact_name' => 'Support Desk',
-                'support_contact_email' => 'support@uonbi.ac.ke',
+                'support_contact_email' => 'support@university.example',
                 'security_contact_name' => 'CSIRT',
-                'security_contact_email' => 'security@uonbi.ac.ke',
-                'domain_hints' => ['uonbi.ac.ke'],
-                'scopes' => ['uonbi.ac.ke'],
+                'security_contact_email' => 'security@university.example',
+                'domain_hints' => ['university.example'],
+                'scopes' => ['university.example'],
                 'registration_authority' => 'https://idp.ubuntunet.net',
                 'registration_policy_url' => 'https://idp.ubuntunet.net/federation/metadata-registration-practice-statement',
             ]);

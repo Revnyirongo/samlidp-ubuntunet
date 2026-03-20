@@ -44,9 +44,19 @@ class TenantController extends AbstractController
     {
         $search = '';
         $status = '';
+        $user = $this->getUser();
+        if (!$user instanceof \App\Entity\User) {
+            throw $this->createAccessDeniedException('Authenticated user required.');
+        }
 
         $qb = $this->tenantRepo->createQueryBuilder('t')
             ->orderBy('t.createdAt', 'DESC');
+
+        if (!$user->isSuperAdmin()) {
+            $qb->innerJoin('t.admins', 'a')
+                ->andWhere('a = :user')
+                ->setParameter('user', $user);
+        }
 
         // Search
         if ($search = $request->query->getString('q')) {
@@ -578,6 +588,106 @@ class TenantController extends AbstractController
                 array_filter(array_map('trim', explode("\n", $data['publishedFederations'])))
             );
         }
+
+        $this->applyDerivedDefaults($tenant);
+    }
+
+    private function applyDerivedDefaults(Tenant $tenant): void
+    {
+        if ($tenant->getOrganizationName() === null || trim($tenant->getOrganizationName()) === '') {
+            $tenant->setOrganizationName($tenant->getName());
+        }
+
+        $profile = $tenant->getMetadataProfile();
+        $orgName = trim((string) ($tenant->getOrganizationName() ?? $tenant->getName()));
+        $orgUrl = trim((string) ($tenant->getOrganizationUrl() ?? ''));
+        $contactName = trim((string) ($tenant->getTechnicalContactName() ?? ''));
+        $contactEmail = strtolower(trim((string) ($tenant->getTechnicalContactEmail() ?? '')));
+        $primaryDomain = $this->derivePrimaryDomain($tenant, $profile);
+
+        $profile['display_name'] ??= $orgName !== '' ? $orgName . ' Identity Provider' : null;
+        $profile['description'] ??= $orgName !== '' ? sprintf('Federated identity provider for %s.', $orgName) : null;
+        $profile['registration_authority'] ??= 'https://idp.ubuntunet.net';
+        $profile['registration_policy_url'] ??= 'https://idp.ubuntunet.net/federation/metadata-registration-practice-statement';
+
+        if (($profile['information_url'] ?? '') === '' && $orgUrl !== '') {
+            $profile['information_url'] = $orgUrl;
+        }
+        if (($profile['privacy_statement_url'] ?? '') === '' && $orgUrl !== '') {
+            $profile['privacy_statement_url'] = rtrim($orgUrl, '/') . '/privacy';
+        }
+        if (($profile['support_contact_name'] ?? '') === '' && $contactName !== '') {
+            $profile['support_contact_name'] = $contactName;
+        }
+        if (($profile['support_contact_email'] ?? '') === '' && $contactEmail !== '') {
+            $profile['support_contact_email'] = $contactEmail;
+        }
+        if (($profile['security_contact_name'] ?? '') === '' && $contactName !== '') {
+            $profile['security_contact_name'] = $contactName;
+        }
+        if (($profile['security_contact_email'] ?? '') === '' && $contactEmail !== '') {
+            $profile['security_contact_email'] = $contactEmail;
+        }
+        if (empty($profile['domain_hints']) && $primaryDomain !== null) {
+            $profile['domain_hints'] = [$primaryDomain];
+        }
+        if (empty($profile['scopes']) && $primaryDomain !== null) {
+            $profile['scopes'] = [$primaryDomain];
+        }
+        if (empty($profile['logo_width'])) {
+            $profile['logo_width'] = 200;
+        }
+        if (empty($profile['logo_height'])) {
+            $profile['logo_height'] = 80;
+        }
+
+        $tenant->setMetadataProfile(array_filter(
+            $profile,
+            static fn (mixed $value): bool => !($value === null || $value === '' || $value === [])
+        ));
+
+        $eduroamProfile = $tenant->getEduroamProfile();
+        if (($eduroamProfile['enabled'] ?? false) && $primaryDomain !== null) {
+            $eduroamProfile['realm'] ??= $primaryDomain;
+            $eduroamProfile['local_radius_hostname'] ??= 'radius.' . $primaryDomain;
+            $tenant->setEduroamProfile($eduroamProfile);
+        }
+    }
+
+    private function derivePrimaryDomain(Tenant $tenant, array $profile = []): ?string
+    {
+        $organizationUrl = trim((string) ($tenant->getOrganizationUrl() ?? ''));
+        if ($organizationUrl !== '') {
+            $host = parse_url($organizationUrl, PHP_URL_HOST);
+            if (is_string($host) && $host !== '') {
+                return strtolower($host);
+            }
+        }
+
+        $contactEmail = trim((string) ($tenant->getTechnicalContactEmail() ?? ''));
+        if ($contactEmail !== '' && str_contains($contactEmail, '@')) {
+            $parts = explode('@', strtolower($contactEmail));
+            $domain = end($parts);
+            if (is_string($domain) && $domain !== '') {
+                return $domain;
+            }
+        }
+
+        foreach (['domain_hints', 'scopes'] as $key) {
+            $values = $profile[$key] ?? null;
+            if (!is_array($values)) {
+                continue;
+            }
+
+            foreach ($values as $value) {
+                $candidate = strtolower(trim((string) $value));
+                if ($candidate !== '') {
+                    return $candidate;
+                }
+            }
+        }
+
+        return null;
     }
 
     private function storeTenantLogo(Tenant $tenant, UploadedFile $file): string

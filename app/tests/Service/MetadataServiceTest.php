@@ -97,7 +97,7 @@ XML;
         $entityId = 'https://sp.university.ac.zz/saml/metadata';
         $xml      = $this->sampleSpMetadataXml($entityId, acsUrl: 'https://sp.university.ac.zz/Shibboleth.sso/SAML2/POST');
 
-        $tenant = $this->makeTenant('uon');
+        $tenant = $this->makeTenant('university-of-africa');
 
         $this->spRepo->method('findOneBy')->willReturn(null);
         $this->em->expects($this->once())->method('persist');

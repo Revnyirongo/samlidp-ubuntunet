@@ -13,23 +13,23 @@ final class EduroamConfigBuilderTest extends TestCase
     public function testDatabaseTenantBuildsSqlBundle(): void
     {
         $tenant = (new Tenant())
-            ->setSlug('uon')
-            ->setName('University of Nairobi')
+            ->setSlug('university-of-africa')
+            ->setName('University of Africa')
             ->setAuthType(Tenant::AUTH_DATABASE)
-            ->setOrganizationUrl('https://uonbi.ac.ke')
+            ->setOrganizationUrl('https://www.university.example')
             ->setEduroamProfile([
-                'realm' => 'uonbi.ac.ke',
+                'realm' => 'university.example',
                 'default_eap_method' => 'peap',
             ]);
 
         $bundle = (new EduroamConfigBuilder())->build($tenant);
 
-        $this->assertSame('uonbi.ac.ke', $bundle['realm']);
+        $this->assertSame('university.example', $bundle['realm']);
         $this->assertSame('database', $bundle['backendMode']);
         $this->assertTrue($bundle['supported']);
         $this->assertArrayHasKey('schema_postgresql', $bundle['files']);
         $this->assertStringContainsString('nt_password_hash', $bundle['files']['backend']['content']);
-        $this->assertStringContainsString('radcheck_uon', $bundle['files']['schema_postgresql']['content']);
+        $this->assertStringContainsString('radcheck_university_of_africa', $bundle['files']['schema_postgresql']['content']);
     }
 
     public function testSamlTenantIsFlaggedAsUnsupported(): void

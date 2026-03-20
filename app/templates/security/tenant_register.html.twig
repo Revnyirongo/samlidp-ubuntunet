@@ -31,6 +31,7 @@
         <input id="username" name="registration[username]" type="text" required value="{{ formData.username }}"
                class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-transparent focus:ring-2 focus:ring-idp-500"
                placeholder="studentnumber or preferred username">
+        <p class="mt-1 text-xs text-slate-500">A suggestion is generated from your name. You can change it before submitting.</p>
     </div>
     <div>
         <label for="email" class="mb-1.5 block text-sm font-semibold text-slate-700">Email address</label>
@@ -59,4 +60,53 @@
         </div>
     </div>
 </form>
+<script>
+const fullNameField = document.getElementById('fullName');
+const givenNameField = document.getElementById('givenName');
+const surnameField = document.getElementById('surname');
+const usernameField = document.getElementById('username');
+
+const slugifyUsername = (value) => value
+    .normalize('NFKD')
+    .replace(/[^\w\s.-]/g, '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '.')
+    .replace(/[^a-z0-9._-]/g, '')
+    .replace(/\.{2,}/g, '.')
+    .replace(/^\.|\.$/g, '');
+
+if (usernameField) {
+    usernameField.addEventListener('input', () => {
+        usernameField.dataset.userEdited = '1';
+    });
+}
+
+if (fullNameField) {
+    fullNameField.addEventListener('input', () => {
+        const fullName = fullNameField.value.trim();
+        const parts = fullName.split(/\s+/).filter(Boolean);
+
+        if (givenNameField && !givenNameField.dataset.userEdited && givenNameField.value.trim() === '' && parts.length > 0) {
+            givenNameField.value = parts[0];
+        }
+
+        if (surnameField && !surnameField.dataset.userEdited && surnameField.value.trim() === '' && parts.length > 1) {
+            surnameField.value = parts.slice(1).join(' ');
+        }
+
+        if (usernameField && !usernameField.dataset.userEdited && usernameField.value.trim() === '') {
+            usernameField.value = slugifyUsername(fullName);
+        }
+    });
+}
+
+[givenNameField, surnameField].forEach((field) => {
+    if (field) {
+        field.addEventListener('input', () => {
+            field.dataset.userEdited = '1';
+        });
+    }
+});
+</script>
 {% endblock %}

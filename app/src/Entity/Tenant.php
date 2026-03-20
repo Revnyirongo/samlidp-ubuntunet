@@ -42,7 +42,7 @@ class Tenant
     private ?Uuid $id = null;
 
     /**
-     * URL-safe slug used for the subdomain, e.g. "uon" → uon.idp.ubuntunet.net
+     * URL-safe slug used for the subdomain, e.g. "university" -> university.idp.ubuntunet.net
      */
     #[ORM\Column(length: 63, unique: true)]
     #[Assert\NotBlank]

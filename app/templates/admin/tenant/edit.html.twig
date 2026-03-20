@@ -34,7 +34,7 @@
                 </label>
                 <input type="text" name="tenant[name]" required
                        value="{{ tenant.name }}"
-                       placeholder="University of Nairobi"
+                       placeholder="University of Africa"
                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none">
             </div>
 
@@ -45,7 +45,7 @@
                 <div class="flex items-center gap-0">
                     <input type="text" name="tenant[slug]" required
                            value="{{ tenant.slug }}"
-                           placeholder="uon"
+                           placeholder="university-of-africa"
                            pattern="[a-z0-9][a-z0-9\-]{0,61}[a-z0-9]"
                            {{ not isNew ? 'readonly class="bg-gray-50"' : '' }}
                            class="flex-1 px-3 py-2 border border-r-0 border-gray-300 rounded-l-lg text-sm focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none font-mono">
@@ -76,14 +76,14 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1.5">Organisation Name</label>
                 <input type="text" name="tenant[organizationName]"
                        value="{{ tenant.organizationName }}"
-                       placeholder="University of Nairobi"
+                       placeholder="University of Africa"
                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1.5">Organisation URL</label>
                 <input type="url" name="tenant[organizationUrl]"
                        value="{{ tenant.organizationUrl }}"
-                       placeholder="https://uon.ac.ke"
+                       placeholder="https://www.university.example"
                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none">
             </div>
             <div class="sm:col-span-2">
@@ -120,7 +120,7 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1.5">Technical Contact Email</label>
                 <input type="email" name="tenant[technicalContactEmail]"
                        value="{{ tenant.technicalContactEmail }}"
-                       placeholder="it@uon.ac.ke"
+                       placeholder="identity@university.example"
                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none">
             </div>
         </div>
@@ -327,7 +327,7 @@
 
     <div class="bg-white rounded-xl border border-gray-200 p-6 mb-5">
         <h2 class="text-sm font-semibold text-gray-900 mb-1.5">eduroam / FreeRADIUS</h2>
-        <p class="text-xs text-gray-500 mb-5">These settings generate tenant-specific FreeRADIUS snippets for institutional eduroam onboarding.</p>
+        <p class="text-xs text-gray-500 mb-5">These settings generate tenant-specific authentication snippets for institutional eduroam onboarding.</p>
         {% set eduroam = tenant.eduroamProfile ?? {} %}
         <label class="mb-5 inline-flex items-center gap-2 text-sm font-medium text-gray-700">
             <input type="checkbox" name="tenant[eduroamProfile][enabled]" value="1"
@@ -375,7 +375,7 @@
                 <textarea name="tenant[eduroamProfile][national_proxy_servers]" rows="3"
                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none"
                           placeholder="nro.example.org:1812">{{ eduroam.national_proxy_servers is defined ? eduroam.national_proxy_servers|join('\n') : '' }}</textarea>
-                <p class="mt-1 text-xs text-gray-400">One host:port per line. These are used in the generated roaming proxy configuration.</p>
+                <p class="mt-1 text-xs text-gray-400">One host:port per line. These values are retained for operator reference only when authentication guidance is generated.</p>
             </div>
         </div>
     </div>
@@ -463,6 +463,7 @@ const ldapConfig = document.getElementById('ldap-config');
 const samlConfig = document.getElementById('saml-config');
 const radiusConfig = document.getElementById('radius-config');
 const authCards = Array.from(authRadios).map((radio) => radio.closest('label')).filter(Boolean);
+const tenantField = (name) => document.querySelector(`[name="${name}"]`);
 
 function syncAuthPanels() {
     const selected = document.querySelector('input[name="tenant[authType]"]:checked');
@@ -506,21 +507,108 @@ if (eduroamToggle) {
     syncEduroamFields();
 }
 
-// Auto-fill slug from name
-{% if isNew %}
-document.querySelector('[name="tenant[name]"]').addEventListener('input', function() {
-    const slugField = document.querySelector('[name="tenant[slug]"]');
-    if (!slugField.readOnly && !slugField.dataset.userEdited) {
-        slugField.value = this.value
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/^-+|-+$/g, '')
-            .substring(0, 63);
+const markUserEdited = (field) => {
+    if (!field) {
+        return;
+    }
+    field.addEventListener('input', () => {
+        field.dataset.userEdited = '1';
+    });
+};
+
+[
+    tenantField('tenant[slug]'),
+    tenantField('tenant[organizationName]'),
+    tenantField('tenant[organizationUrl]'),
+    tenantField('tenant[technicalContactEmail]'),
+    tenantField('tenant[metadataProfile][display_name]'),
+    tenantField('tenant[metadataProfile][information_url]'),
+    tenantField('tenant[metadataProfile][privacy_statement_url]'),
+    tenantField('tenant[metadataProfile][support_contact_email]'),
+    tenantField('tenant[metadataProfile][security_contact_email]'),
+    tenantField('tenant[metadataProfile][domain_hints]'),
+    tenantField('tenant[metadataProfile][scopes]'),
+    tenantField('tenant[metadataProfile][registration_authority]'),
+    tenantField('tenant[metadataProfile][registration_policy_url]'),
+    tenantField('tenant[eduroamProfile][realm]'),
+    tenantField('tenant[eduroamProfile][local_radius_hostname]')
+].forEach(markUserEdited);
+
+const slugify = (value) => value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .substring(0, 63);
+
+const deriveDomain = () => {
+    const organizationUrl = tenantField('tenant[organizationUrl]')?.value?.trim() || '';
+    if (organizationUrl !== '') {
+        try {
+            return new URL(organizationUrl).hostname.toLowerCase();
+        } catch (error) {
+        }
+    }
+
+    const technicalEmail = tenantField('tenant[technicalContactEmail]')?.value?.trim().toLowerCase() || '';
+    if (technicalEmail.includes('@')) {
+        return technicalEmail.split('@').pop();
+    }
+
+    return '';
+};
+
+const fillIfBlank = (field, value) => {
+    if (!field || field.dataset.userEdited || field.value.trim() !== '' || !value) {
+        return;
+    }
+    field.value = value;
+};
+
+const syncDerivedTenantFields = () => {
+    const institutionName = tenantField('tenant[name]')?.value?.trim() || '';
+    const slugField = tenantField('tenant[slug]');
+    const organizationNameField = tenantField('tenant[organizationName]');
+    const displayNameField = tenantField('tenant[metadataProfile][display_name]');
+    const infoUrlField = tenantField('tenant[metadataProfile][information_url]');
+    const privacyField = tenantField('tenant[metadataProfile][privacy_statement_url]');
+    const supportEmailField = tenantField('tenant[metadataProfile][support_contact_email]');
+    const securityEmailField = tenantField('tenant[metadataProfile][security_contact_email]');
+    const registrationAuthorityField = tenantField('tenant[metadataProfile][registration_authority]');
+    const registrationPolicyField = tenantField('tenant[metadataProfile][registration_policy_url]');
+    const domainHintsField = tenantField('tenant[metadataProfile][domain_hints]');
+    const scopesField = tenantField('tenant[metadataProfile][scopes]');
+    const realmField = tenantField('tenant[eduroamProfile][realm]');
+    const radiusHostField = tenantField('tenant[eduroamProfile][local_radius_hostname]');
+    const organizationUrl = tenantField('tenant[organizationUrl]')?.value?.trim() || '';
+    const technicalEmail = tenantField('tenant[technicalContactEmail]')?.value?.trim().toLowerCase() || '';
+    const domain = deriveDomain();
+
+    {% if isNew %}
+    if (slugField && !slugField.readOnly && !slugField.dataset.userEdited) {
+        slugField.value = slugify(institutionName);
+    }
+    {% endif %}
+
+    fillIfBlank(organizationNameField, institutionName);
+    fillIfBlank(displayNameField, institutionName ? `${institutionName} Identity Provider` : '');
+    fillIfBlank(infoUrlField, organizationUrl);
+    fillIfBlank(privacyField, organizationUrl ? `${organizationUrl.replace(/\/+$/, '')}/privacy` : '');
+    fillIfBlank(supportEmailField, technicalEmail);
+    fillIfBlank(securityEmailField, technicalEmail);
+    fillIfBlank(registrationAuthorityField, 'https://idp.ubuntunet.net');
+    fillIfBlank(registrationPolicyField, 'https://idp.ubuntunet.net/federation/metadata-registration-practice-statement');
+    fillIfBlank(domainHintsField, domain);
+    fillIfBlank(scopesField, domain);
+    fillIfBlank(realmField, domain);
+    fillIfBlank(radiusHostField, domain ? `radius.${domain}` : '');
+};
+
+[tenantField('tenant[name]'), tenantField('tenant[organizationUrl]'), tenantField('tenant[technicalContactEmail]')].forEach((field) => {
+    if (field) {
+        field.addEventListener('input', syncDerivedTenantFields);
     }
 });
-document.querySelector('[name="tenant[slug]"]').addEventListener('input', function() {
-    this.dataset.userEdited = '1';
-});
-{% endif %}
+
+syncDerivedTenantFields();
 </script>
 {% endblock %}
