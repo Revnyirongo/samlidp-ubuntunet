@@ -6,6 +6,9 @@ services:
     image: nginx:1.25-alpine
     container_name: samlidp_nginx
     restart: unless-stopped
+    environment:
+      SAMLIDP_HOSTNAME: ${SAMLIDP_HOSTNAME:-example.com}
+      SAMLIDP_HOSTNAME_REGEX: ${SAMLIDP_HOSTNAME_REGEX:-example\\.com}
     ulimits:
       nofile:
         soft: 8192
@@ -15,7 +18,9 @@ services:
       - "${HTTPS_PORT:-443}:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/templates:/etc/nginx/templates:ro
+      - ./nginx/conf.d/proxy-params.conf:/etc/nginx/conf.d/proxy-params.conf:ro
+      - ./nginx/conf.d/ssl-params.conf:/etc/nginx/conf.d/ssl-params.conf:ro
       - ./conf/credentials/wildcard_certificate.crt:/etc/ssl/certs/managedidp.crt:ro
       - ./conf/credentials/wildcard_certificate.key:/etc/ssl/private/managedidp.key:ro
       - ./app/public:/var/www/html/public:ro

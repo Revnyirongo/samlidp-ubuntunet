@@ -1,8 +1,8 @@
-# ── Main admin portal: base hostname ─────────────────────────
+# ── Main admin portal: ${SAMLIDP_HOSTNAME} ──────────────────
 server {
     listen 443 ssl;
     http2 on;
-    server_name _;
+    server_name ${SAMLIDP_HOSTNAME};
 
     set $app_fpm app:9000;
 
@@ -16,17 +16,14 @@ server {
 
     client_max_body_size 10M;
 
-    # Security headers
     add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
     add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https: data:; frame-ancestors 'none';" always;
 
-    # Health check should exercise Symfony, not a static Nginx response.
     location = /healthz {
         access_log off;
         try_files $uri /index.php$is_args$args;
     }
 
-    # Static assets
     location /build/ {
         expires 1y;
         add_header Cache-Control "public, immutable";
@@ -45,7 +42,6 @@ server {
         try_files $uri =404;
     }
 
-    # Admin login rate limit
     location /admin/login {
         limit_req zone=login burst=5 nodelay;
         try_files $uri /index.php$is_args$args;
@@ -74,11 +70,11 @@ server {
     }
 }
 
-# ── Per-tenant IdP: <slug>.<base-hostname> ──────────────────
+# ── Per-tenant IdP: <slug>.${SAMLIDP_HOSTNAME} ──────────────
 server {
     listen 443 ssl;
     http2 on;
-    server_name ~^(?<tenant>[a-z0-9\-]+)\..+$;
+    server_name ~^(?<tenant>[a-z0-9\-]+)\.${SAMLIDP_HOSTNAME_REGEX}$;
 
     set $app_fpm app:9000;
     set $ssp_backend simplesamlphp:80;
@@ -118,8 +114,6 @@ server {
         try_files $uri =404;
     }
 
-    # SimpleSAMLphp uses /simplesaml/ as its base path. Strip that prefix when proxying
-    # to the SSP container, which serves module.php, assets/, and saml2/ at its document root.
     location ^~ /simplesaml/ {
         proxy_set_header X-Tenant-Slug $tenant;
         rewrite ^/simplesaml/?(.*)$ /$1 break;
@@ -127,7 +121,6 @@ server {
         include /etc/nginx/conf.d/proxy-params.conf;
     }
 
-    # Backward-compatible legacy aliases for older metadata and integrations.
     location = /saml2/idp/SSO {
         proxy_set_header X-Tenant-Slug $tenant;
         proxy_pass http://$ssp_backend/saml2/idp/SSOService.php$is_args$args;
@@ -140,7 +133,6 @@ server {
         include /etc/nginx/conf.d/proxy-params.conf;
     }
 
-    # Tenant self-service account pages are served by Symfony even on tenant subdomains.
     location ^~ /tenant/ {
         try_files $uri /index.php$is_args$args;
     }
@@ -163,7 +155,6 @@ server {
         internal;
     }
 
-    # Rate limit the active SSO entrypoints.
     location ~* ^/saml2/idp/(SSO|SSOService\.php)$ {
         limit_req zone=saml_sso burst=20 nodelay;
         proxy_set_header X-Tenant-Slug $tenant;

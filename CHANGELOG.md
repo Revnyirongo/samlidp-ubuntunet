@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and this project follows Semantic Versioning.
 
+## [1.0.6] - 2026-03-24
+
+### Fixed
+- Switched nginx tenant host matching to environment-rendered templates so installations work correctly on both apex domains and subdomain deployments.
+- Restored the public admin portal, health endpoint, and tenant metadata routes on live deployments using subdomain hostnames.
+
 ## [1.0.5] - 2026-03-24
 
 ### Fixed
