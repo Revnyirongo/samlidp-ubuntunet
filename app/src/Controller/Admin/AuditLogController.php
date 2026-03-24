@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
+use App\Entity\User;
 use App\Repository\TenantRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Knp\Component\Pager\PaginatorInterface;
@@ -28,16 +29,24 @@ class AuditLogController extends AbstractController
     {
         $action = '';
         $tenantId = '';
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            throw $this->createAccessDeniedException('Authenticated user required.');
+        }
 
         $qb = $this->em->createQueryBuilder()
             ->select('a')
             ->from(\App\Entity\AuditLog::class, 'a')
             ->orderBy('a.createdAt', 'DESC');
 
+        $tenants = $this->tenantRepo->findManagedByUser($user);
+
         // Super-admins see all; regular admins see only their tenants
-        if (!$this->isGranted('ROLE_SUPER_ADMIN')) {
-            $user      = $this->getUser();
-            $tenantIds = $user->getManagedTenants()->map(fn($t) => (string) $t->getId())->toArray();
+        if (!$user->isSuperAdmin()) {
+            $tenantIds = array_map(
+                static fn ($tenant): string => (string) $tenant->getId(),
+                $tenants,
+            );
 
             if (empty($tenantIds)) {
                 $qb->andWhere('1=0'); // No tenants = no log access
@@ -65,9 +74,7 @@ class AuditLogController extends AbstractController
 
         return $this->render('admin/audit/index.html.twig', [
             'pagination' => $pagination,
-            'tenants'    => $this->isGranted('ROLE_SUPER_ADMIN')
-                ? $this->tenantRepo->findAllActive()
-                : $this->getUser()->getManagedTenants()->toArray(),
+            'tenants'    => $user->isSuperAdmin() ? $this->tenantRepo->findAllActive() : $tenants,
             'action'     => $action,
             'tenantId'   => $tenantId,
         ]);

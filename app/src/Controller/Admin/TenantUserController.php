@@ -20,7 +20,6 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
@@ -38,8 +37,6 @@ class TenantUserController extends AbstractController
         private readonly NotificationMailer $mailer,
         private readonly MailerStatus $mailerStatus,
         private readonly IdpUserPasswordManager $passwordManager,
-        private readonly UrlGeneratorInterface $urlGenerator,
-        private readonly string $samlidpHostname,
     ) {}
 
     #[Route('', name: 'index', methods: ['GET'])]
@@ -285,7 +282,6 @@ class TenantUserController extends AbstractController
             return $this->redirectToRoute('admin_tenant_user_index', ['tenant' => $tenant->getId()]);
         }
 
-        $rawToken = null;
         try {
             $rawToken = $this->tokenService->issue($user, IdpUserActionToken::PURPOSE_PASSWORD_RESET);
             $this->mailer->sendTenantUserPasswordReset($user, $rawToken);
@@ -299,18 +295,9 @@ class TenantUserController extends AbstractController
             );
 
             $this->addFlash('danger', sprintf(
-                'Could not send a reset email to "%s": %s',
+                'Could not send a password reset email to "%s" right now. Please verify the mail service and try again.',
                 $user->getUsername(),
-                $this->safeExceptionMessage($e),
             ));
-
-            if (is_string($rawToken) && $rawToken !== '') {
-                $this->addFlash('warning', sprintf(
-                    'Manual reset link for %s: %s',
-                    $user->getUsername(),
-                    $this->buildTenantUserActionUrl($tenant, $rawToken),
-                ));
-            }
 
             return $this->redirectToRoute('admin_tenant_user_index', ['tenant' => $tenant->getId()]);
         }
@@ -344,7 +331,6 @@ class TenantUserController extends AbstractController
             return $this->redirectToRoute('admin_tenant_user_index', ['tenant' => $tenant->getId()]);
         }
 
-        $rawToken = null;
         try {
             $user->setIsActive(true);
             $rawToken = $this->tokenService->issue($user, IdpUserActionToken::PURPOSE_SET_PASSWORD, new \DateInterval('P1D'));
@@ -359,18 +345,9 @@ class TenantUserController extends AbstractController
             );
 
             $this->addFlash('danger', sprintf(
-                'Could not send an invite email to "%s": %s',
+                'Could not send an invitation email to "%s" right now. Please verify the mail service and try again.',
                 $user->getUsername(),
-                $this->safeExceptionMessage($e),
             ));
-
-            if (is_string($rawToken) && $rawToken !== '') {
-                $this->addFlash('warning', sprintf(
-                    'Manual account setup link for %s: %s',
-                    $user->getUsername(),
-                    $this->buildTenantUserActionUrl($tenant, $rawToken),
-                ));
-            }
 
             return $this->redirectToRoute('admin_tenant_user_index', ['tenant' => $tenant->getId()]);
         }
@@ -628,23 +605,4 @@ class TenantUserController extends AbstractController
         return !in_array(strtolower((string) $value), ['0', 'false', 'no', 'off'], true);
     }
 
-    private function buildTenantUserActionUrl(Tenant $tenant, string $rawToken): string
-    {
-        $path = $this->urlGenerator->generate(
-            'app_tenant_reset_password',
-            ['token' => $rawToken],
-            UrlGeneratorInterface::ABSOLUTE_PATH,
-        );
-
-        $host = preg_replace('#^https?://#', '', $this->samlidpHostname) ?: $this->samlidpHostname;
-
-        return sprintf('https://%s.%s%s', $tenant->getSlug(), $host, $path);
-    }
-
-    private function safeExceptionMessage(\Throwable $e): string
-    {
-        $message = trim($e->getMessage());
-
-        return $message !== '' ? $message : 'unexpected mail transport failure';
-    }
 }

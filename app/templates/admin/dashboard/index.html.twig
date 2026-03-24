@@ -31,7 +31,9 @@
     <div class="bg-white rounded-xl border border-gray-200">
         <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
             <h2 class="text-sm font-semibold text-gray-900">Recent Tenants</h2>
-            <a href="{{ path('admin_tenant_index') }}" class="text-xs text-idp-600 hover:underline">View all</a>
+            <a href="{{ path('admin_tenant_index') }}" class="text-xs text-idp-600 hover:underline">
+                {{ is_granted('ROLE_SUPER_ADMIN') ? 'View all' : 'Open list' }}
+            </a>
         </div>
         <div class="divide-y divide-gray-50">
             {% for tenant in recentTenants %}

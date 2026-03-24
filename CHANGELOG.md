@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and this project follows Semantic Versioning.
 
+## [1.0.4] - 2026-03-24
+
+### Changed
+- Scoped tenant-admin navigation and tenant listings to managed tenants only, with tenant-specific labels in the admin UI.
+- Replaced the default fallback branding mark with a security shield icon across the admin and authentication layouts.
+- Removed developer-oriented invitation and reset delivery fallback messaging from tenant-admin user screens.
+
+### Fixed
+- Fixed the audit log view for tenant administrators by safely resolving the authenticated user and managed tenant scope.
+- Simplified tenant-user invitation and reset failure flashes so they no longer expose internal delivery details.
+
 ## [1.0.3] - 2026-03-20
 
 ### Changed

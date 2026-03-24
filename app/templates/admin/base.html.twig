@@ -81,7 +81,9 @@
 <div class="min-h-full lg:flex">
     <aside class="w-full shrink-0 border-b border-slate-200/70 bg-white/86 backdrop-blur lg:sticky lg:top-0 lg:h-screen lg:w-72 lg:border-b-0 lg:border-r">
         <div class="flex items-center gap-3 border-b border-slate-200/70 px-6 py-6">
-            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-ubuntu-500 to-idp-600 text-base font-extrabold text-white shadow-sm">U</div>
+            <div class="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+                <img src="{{ asset('assets/default-security-shield.svg') }}" alt="Security shield" class="h-full w-full object-contain p-1.5">
+            </div>
             <div>
                 <div class="text-sm font-extrabold tracking-tight text-slate-900">UbuntuNet Managed IdP</div>
                 <div class="text-xs font-medium text-slate-500">Administration</div>
@@ -100,7 +102,7 @@
             <a href="{{ path('admin_tenant_index') }}"
                class="sidebar-link {{ app.request.attributes.get('_route') starts with 'admin_tenant_' ? 'active' : '' }}">
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21h18M6 18V7m6 11V4m6 14v-8M4 7h16"/></svg>
-                All Tenants
+                {{ is_granted('ROLE_SUPER_ADMIN') ? 'All Tenants' : 'My Tenants' }}
             </a>
 
             {% if is_granted('ROLE_SUPER_ADMIN') %}
@@ -113,11 +115,13 @@
 
             <div class="px-3 pt-5 pb-1 text-[11px] font-extrabold uppercase tracking-[0.18em] text-slate-400">System</div>
 
+            {% if is_granted('ROLE_SUPER_ADMIN') %}
             <a href="{{ path('admin_user_index') }}"
                class="sidebar-link {{ app.request.attributes.get('_route') starts with 'admin_user_' ? 'active' : '' }}">
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-1a4 4 0 00-4-4H6a4 4 0 00-4 4v1h5m4 0h2m-1-8a4 4 0 100-8 4 4 0 000 8z"/></svg>
                 Admin Users
             </a>
+            {% endif %}
 
             {% if is_granted('ROLE_SUPER_ADMIN') %}
             <a href="{{ path('admin_registration_request_index') }}"

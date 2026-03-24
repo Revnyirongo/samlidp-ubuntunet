@@ -36,13 +36,6 @@
             Invitation and password reset emails will not be sent until <code>MAILER_DSN</code>, <code>MAILER_FROM_ADDRESS</code>, and <code>MAILER_FROM_NAME</code> are configured on the server.
         </p>
     </div>
-    {% else %}
-    <div class="rounded-xl border border-slate-200 bg-slate-50 p-5">
-        <h2 class="text-sm font-semibold text-slate-900">Invitation and Reset Delivery</h2>
-        <p class="mt-1 text-sm text-slate-600">
-            If SMTP delivery fails after you click <strong>Send Invite</strong> or <strong>Send Reset</strong>, the platform now shows a one-time fallback link you can copy and deliver manually.
-        </p>
-    </div>
     {% endif %}
 
     <div class="rounded-xl border border-blue-200 bg-blue-50 p-5">
