@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and this project follows Semantic Versioning.
 
+## [1.0.8] - 2026-03-24
+
+### Added
+- Version-controlled operations and deployment documentation under `docs/`, including architecture, installation, configuration, operations, troubleshooting, and GitLab wiki publishing guidance.
+- Explicit container DNS resolver configuration defaults for runtime services that fetch external metadata.
+
+### Changed
+- Clarified that repository documentation is the source of truth for GitLab publishing.
+- Improved metadata fetch resilience with retry behavior and DNS-aware error handling.
+- Added a resolver fallback path for metadata fetches when container DNS is unhealthy.
+
+### Fixed
+- Reduced production metadata import fragility caused by transient container DNS resolution failures.
+
 ## [1.0.7] - 2026-03-24
 
 ### Fixed

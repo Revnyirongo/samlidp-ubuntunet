@@ -28,10 +28,10 @@ class NotificationMailer
     public function sendPasswordReset(User $user, string $rawToken, bool $setPassword = false): void
     {
         $url = $this->urlGenerator->generate('app_reset_password', ['token' => $rawToken], UrlGeneratorInterface::ABSOLUTE_URL);
-        $subject = $setPassword ? '[UbuntuNet IdP] Set your password' : '[UbuntuNet IdP] Reset your password';
+        $subject = $setPassword ? '[eduID.africa] Set your password' : '[eduID.africa] Reset your password';
         $intro = $setPassword
             ? 'Your administrator account is ready. Set your password using the secure link below.'
-            : 'A password reset was requested for your UbuntuNet IdP administrator account.';
+            : 'A password reset was requested for your eduID.africa administrator account.';
 
         $this->send(
             to: $user->getEmail(),
@@ -47,7 +47,7 @@ class NotificationMailer
     {
         $this->send(
             to: $user->getEmail(),
-            subject: '[UbuntuNet IdP] Your password was changed',
+            subject: '[eduID.africa] Your password was changed',
             html: $this->wrapHtml(sprintf('<p>Hello %s,</p><p>Your administrator password was changed successfully.</p><p>If you did not initiate this change, contact support immediately.</p>', htmlspecialchars($user->getFullName()))),
             text: sprintf("Hello %s,\n\nYour administrator password was changed successfully.\nIf you did not initiate this change, contact support immediately.\n", $user->getFullName()),
         );
@@ -127,11 +127,11 @@ class NotificationMailer
 
     public function sendRegistrationReceived(RegistrationRequest $request): void
     {
-        $tenantName = $request->getRequestedTenant()?->getName() ?? 'the UbuntuNet IdP service';
+        $tenantName = $request->getRequestedTenant()?->getName() ?? 'the eduID.africa service';
 
         $this->send(
             to: $request->getEmail(),
-            subject: '[UbuntuNet IdP] Registration request received',
+            subject: '[eduID.africa] Registration request received',
             html: $this->wrapHtml(sprintf('<p>Hello %s,</p><p>Your registration request for <strong>%s</strong> has been received. An administrator will review it and email you once access is approved.</p>', htmlspecialchars($request->getFullName()), htmlspecialchars($tenantName))),
             text: sprintf("Hello %s,\n\nYour registration request for %s has been received. An administrator will review it and email you once access is approved.\n", $request->getFullName(), $tenantName),
         );
@@ -144,7 +144,7 @@ class NotificationMailer
 
         $this->send(
             to: $recipientEmail,
-            subject: '[UbuntuNet IdP] New tenant admin registration request',
+            subject: '[eduID.africa] New tenant admin registration request',
             html: $this->wrapHtml(sprintf('<p>A new tenant administrator registration request was submitted.</p><p><strong>Name:</strong> %s<br><strong>Email:</strong> %s<br><strong>Tenant:</strong> %s</p><p><a href="%s">Review requests</a></p>', htmlspecialchars($request->getFullName()), htmlspecialchars($request->getEmail()), htmlspecialchars($tenantName), htmlspecialchars($reviewUrl))),
             text: sprintf("A new tenant administrator registration request was submitted.\n\nName: %s\nEmail: %s\nTenant: %s\n\nReview: %s\n", $request->getFullName(), $request->getEmail(), $tenantName, $reviewUrl),
         );
@@ -153,11 +153,11 @@ class NotificationMailer
     public function sendRegistrationApprovedWithPasswordSetup(User $user, RegistrationRequest $request, string $rawToken): void
     {
         $url = $this->urlGenerator->generate('app_reset_password', ['token' => $rawToken], UrlGeneratorInterface::ABSOLUTE_URL);
-        $tenantName = $request->getRequestedTenant()?->getName() ?? 'UbuntuNet IdP';
+        $tenantName = $request->getRequestedTenant()?->getName() ?? 'eduID.africa';
 
         $this->send(
             to: $user->getEmail(),
-            subject: '[UbuntuNet IdP] Your registration was approved',
+            subject: '[eduID.africa] Your registration was approved',
             html: $this->wrapHtml(sprintf('<p>Hello %s,</p><p>Your administrator registration for <strong>%s</strong> was approved.</p><p><a href="%s" style="display:inline-block;padding:12px 18px;background:#174d7d;color:#fff;text-decoration:none;border-radius:10px;font-weight:700;">Set password</a></p><p>This link expires in 24 hours.</p>', htmlspecialchars($user->getFullName()), htmlspecialchars($tenantName), htmlspecialchars($url))),
             text: sprintf("Hello %s,\n\nYour administrator registration for %s was approved.\nSet your password here: %s\n\nThis link expires in 24 hours.\n", $user->getFullName(), $tenantName, $url),
         );
@@ -166,11 +166,11 @@ class NotificationMailer
     public function sendRegistrationApprovedExistingUser(User $user, RegistrationRequest $request): void
     {
         $loginUrl = $this->urlGenerator->generate('app_login', [], UrlGeneratorInterface::ABSOLUTE_URL);
-        $tenantName = $request->getRequestedTenant()?->getName() ?? 'UbuntuNet IdP';
+        $tenantName = $request->getRequestedTenant()?->getName() ?? 'eduID.africa';
 
         $this->send(
             to: $user->getEmail(),
-            subject: '[UbuntuNet IdP] Access granted',
+            subject: '[eduID.africa] Access granted',
             html: $this->wrapHtml(sprintf('<p>Hello %s,</p><p>Your administrator registration for <strong>%s</strong> was approved. You can now sign in using your existing account.</p><p><a href="%s">Open login</a></p>', htmlspecialchars($user->getFullName()), htmlspecialchars($tenantName), htmlspecialchars($loginUrl))),
             text: sprintf("Hello %s,\n\nYour administrator registration for %s was approved. You can now sign in using your existing account.\n\nLogin: %s\n", $user->getFullName(), $tenantName, $loginUrl),
         );
@@ -178,14 +178,14 @@ class NotificationMailer
 
     public function sendRegistrationRejected(RegistrationRequest $request): void
     {
-        $tenantName = $request->getRequestedTenant()?->getName() ?? 'UbuntuNet IdP';
+        $tenantName = $request->getRequestedTenant()?->getName() ?? 'eduID.africa';
         $notes = trim((string) $request->getReviewNotes());
         $notesText = $notes !== '' ? "\n\nReview note: " . $notes : '';
         $notesHtml = $notes !== '' ? '<p><strong>Review note:</strong> ' . htmlspecialchars($notes) . '</p>' : '';
 
         $this->send(
             to: $request->getEmail(),
-            subject: '[UbuntuNet IdP] Registration request update',
+            subject: '[eduID.africa] Registration request update',
             html: $this->wrapHtml(sprintf('<p>Hello %s,</p><p>Your administrator registration request for <strong>%s</strong> was not approved at this time.</p>%s', htmlspecialchars($request->getFullName()), htmlspecialchars($tenantName), $notesHtml)),
             text: sprintf("Hello %s,\n\nYour administrator registration request for %s was not approved at this time.%s\n", $request->getFullName(), $tenantName, $notesText),
         );
@@ -267,9 +267,9 @@ class NotificationMailer
     {
         $this->send(
             to: $recipientEmail,
-            subject: '[UbuntuNet IdP] SMTP test message',
-            html: $this->wrapHtml('<p>This is a test message from the UbuntuNet Managed IdP mail configuration.</p><p>If you received this, SMTP transport, authentication, and sender formatting are working.</p>'),
-            text: "This is a test message from the UbuntuNet Managed IdP mail configuration.\n\nIf you received this, SMTP transport, authentication, and sender formatting are working.\n",
+            subject: '[eduID.africa] SMTP test message',
+            html: $this->wrapHtml('<p>This is a test message from the eduID.africa mail configuration.</p><p>If you received this, SMTP transport, authentication, and sender formatting are working.</p>'),
+            text: "This is a test message from the eduID.africa mail configuration.\n\nIf you received this, SMTP transport, authentication, and sender formatting are working.\n",
         );
     }
 
@@ -305,7 +305,7 @@ class NotificationMailer
 <html lang="en">
 <body style="font-family:Arial,sans-serif;color:#0f172a;max-width:620px;margin:0 auto;padding:24px;background:#f8fafc;">
   <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:16px;padding:24px;">
-    <h1 style="margin:0 0 20px;font-size:22px;color:#174d7d;">UbuntuNet Managed IdP</h1>
+    <h1 style="margin:0 0 20px;font-size:22px;color:#174d7d;">eduID.africa</h1>
     {$body}
     <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;">
     <p style="font-size:12px;color:#64748b;margin:0;">Sent from {$host}</p>

@@ -4,9 +4,9 @@ Production-grade multitenant SAML 2.0 identity provider software for the researc
 
 ## Release
 
-- Version: `1.0.3`
+- Version: `1.0.8`
 - Repository: `https://github.com/Revnyirongo/samlidp-ubuntunet`
-- Documentation: `https://gitlab.ubuntunet.net/`
+- Documentation source: [`docs/Home.md`](docs/Home.md)
 
 ## Platform
 
@@ -110,10 +110,15 @@ Imported metadata is validated before persistence and can be approved per tenant
 
 ## Documentation
 
-Project documentation is intended to live on the UbuntuNet GitLab wiki:
+Version-controlled documentation is maintained in this repository under [`docs/`](docs/).
 
-```text
-https://gitlab.ubuntunet.net/
-```
+Recommended entry points:
 
-Use this repository for the application source, deployment assets, and release history.
+- [Documentation Home](docs/Home.md)
+- [Installation](docs/Installation.md)
+- [Configuration](docs/Configuration.md)
+- [Operations](docs/Operations.md)
+- [Security and 2FA](docs/Security-and-2FA.md)
+- [Publishing to GitLab Wiki](docs/Publishing-to-GitLab-Wiki.md)
+
+For publishing on `gitlab.ubuntunet.net`, use the repository documentation as the source of truth and sync or copy the Markdown pages into the GitLab wiki.

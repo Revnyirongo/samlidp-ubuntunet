@@ -15,6 +15,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Symfony\Contracts\Cache\CacheInterface;
+use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 
@@ -205,6 +206,34 @@ XML;
 
         $tenant = $this->makeTenant('test');
         $sp     = $this->service->importSpMetadata($tenant, 'https://remote-sp.org/metadata', isUrl: true);
+
+        $this->assertSame($entityId, $sp->getEntityId());
+    }
+
+    public function testImportSpMetadataRetriesTransientTransportFailure(): void
+    {
+        $entityId = 'https://remote-sp.org/saml';
+        $xml = $this->sampleSpMetadataXml($entityId);
+
+        $response = $this->createMock(ResponseInterface::class);
+        $response->method('getContent')->willReturn($xml);
+
+        $transportException = new class ('Could not resolve host: remote-sp.org') extends \RuntimeException implements TransportExceptionInterface {};
+
+        $this->httpClient->expects($this->exactly(2))
+            ->method('request')
+            ->with('GET', 'https://remote-sp.org/metadata', $this->isType('array'))
+            ->willReturnOnConsecutiveCalls(
+                $this->throwException($transportException),
+                $response
+            );
+
+        $this->spRepo->method('findOneBy')->willReturn(null);
+        $this->em->method('persist');
+        $this->em->method('flush');
+
+        $tenant = $this->makeTenant('test');
+        $sp = $this->service->importSpMetadata($tenant, 'https://remote-sp.org/metadata', isUrl: true);
 
         $this->assertSame($entityId, $sp->getEntityId());
     }

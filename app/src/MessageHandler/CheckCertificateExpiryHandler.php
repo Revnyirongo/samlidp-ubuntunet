@@ -68,8 +68,8 @@ class CheckCertificateExpiryHandler
             $email = (new Email())
                 ->from($this->mailerFromAddress)
                 ->to($to)
-                ->subject('[UbuntuNet IdP] Certificate Expiry Warning')
-                ->text($message . "\n\nPlease update the SP metadata via your IdP admin portal.\n\nUbuntuNet IdP Service");
+                ->subject('[eduID.africa] Certificate Expiry Warning')
+                ->text($message . "\n\nPlease update the SP metadata via your IdP admin portal.\n\neduID.africa");
 
             $this->mailer->send($email);
         } catch (\Throwable $e) {

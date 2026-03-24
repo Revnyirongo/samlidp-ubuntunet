@@ -39,8 +39,14 @@ fi
 echo "[entrypoint] Writing SimpleSAMLphp config..."
 cat > "${CONFIG_DIR}/config.php" << EOF
 <?php
+\$sspHost = \$_SERVER['HTTP_X_FORWARDED_HOST'] ?? \$_SERVER['HTTP_HOST'] ?? getenv('SAMLIDP_HOSTNAME') ?: 'example.com';
+\$sspHost = preg_replace('/:80$/', '', (string) \$sspHost);
+\$sspProto = \$_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ((!empty(\$_SERVER['HTTPS']) && \$_SERVER['HTTPS'] !== 'off') ? 'https' : 'http');
+\$sspProto = strtolower(trim(explode(',', (string) \$sspProto)[0] ?: 'https'));
+\$sspBase = sprintf('%s://%s/simplesaml/', \$sspProto, \$sspHost);
+
 \$config = [
-    'baseurlpath'       => 'simplesaml/',
+    'baseurlpath'       => \$sspBase,
     'certdir'           => '${CERT_DIR}/',
     'loggingdir'        => '/tmp/',
     'datadir'           => '/tmp/ssp-data/',

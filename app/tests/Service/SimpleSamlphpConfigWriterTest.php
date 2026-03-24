@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Service;
 
+use App\Entity\ServiceProvider;
 use App\Entity\Tenant;
 use App\Repository\ServiceProviderRepository;
 use App\Repository\TenantRepository;
@@ -70,5 +71,76 @@ final class SimpleSamlphpConfigWriterTest extends TestCase
         $this->assertStringContainsString("'width' => 200", $block);
         $this->assertStringContainsString("'contactType' => 'other'", $block);
         $this->assertStringContainsString("'remd:contactType' => 'http://refeds.org/metadata/contactType/security'", $block);
+    }
+
+    public function testRemoteSpBlockOmitsBlankSingleLogoutService(): void
+    {
+        $writer = new SimpleSamlphpConfigWriter(
+            $this->createMock(ServiceProviderRepository::class),
+            $this->createMock(TenantRepository::class),
+            $this->createMock(LockFactory::class),
+            new NullLogger(),
+            new TenantMetadataProfileBuilder('example.com'),
+            '/tmp/config',
+            '/tmp/metadata',
+            '/tmp/cert',
+            'example.com',
+        );
+
+        $tenant = (new Tenant())
+            ->setSlug('university-of-africa')
+            ->setName('University of Africa')
+            ->setEntityId('https://university-of-africa.example.com/saml2/idp/metadata.php')
+            ->setStatus(Tenant::STATUS_ACTIVE);
+
+        $sp = (new ServiceProvider())
+            ->setTenant($tenant)
+            ->setEntityId('https://service.example.com/shibboleth')
+            ->setName('Example Service')
+            ->setAcsUrl('https://service.example.com/Shibboleth.sso/SAML2/POST')
+            ->setSloUrl('')
+            ->setApproved(true);
+
+        $method = new \ReflectionMethod($writer, 'buildSpBlock');
+        $method->setAccessible(true);
+        $block = (string) $method->invoke($writer, $sp, $tenant);
+
+        $this->assertStringContainsString("'AssertionConsumerService' => [", $block);
+        $this->assertStringNotContainsString("'SingleLogoutService' => [", $block);
+    }
+
+    public function testRemoteSpBlockSkipsEntriesWithoutAcsUrl(): void
+    {
+        $writer = new SimpleSamlphpConfigWriter(
+            $this->createMock(ServiceProviderRepository::class),
+            $this->createMock(TenantRepository::class),
+            $this->createMock(LockFactory::class),
+            new NullLogger(),
+            new TenantMetadataProfileBuilder('example.com'),
+            '/tmp/config',
+            '/tmp/metadata',
+            '/tmp/cert',
+            'example.com',
+        );
+
+        $tenant = (new Tenant())
+            ->setSlug('university-of-africa')
+            ->setName('University of Africa')
+            ->setEntityId('https://university-of-africa.example.com/saml2/idp/metadata.php')
+            ->setStatus(Tenant::STATUS_ACTIVE);
+
+        $sp = (new ServiceProvider())
+            ->setTenant($tenant)
+            ->setEntityId('https://service.example.com/shibboleth')
+            ->setName('Example Service')
+            ->setAcsUrl('')
+            ->setApproved(true);
+
+        $method = new \ReflectionMethod($writer, 'buildSpBlock');
+        $method->setAccessible(true);
+        $block = (string) $method->invoke($writer, $sp, $tenant);
+
+        $this->assertStringContainsString('Skipped SP Example Service', $block);
+        $this->assertStringNotContainsString('$metadata[', $block);
     }
 }

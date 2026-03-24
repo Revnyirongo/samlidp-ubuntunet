@@ -38,6 +38,9 @@ class IdpUser
     #[ORM\Column(length: 255)]
     private string $password = '';
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $legacySalt = null;
+
     /**
      * Uppercase NT hash used by FreeRADIUS for MSCHAPv2 when this
      * managed user store is used for eduroam authentication.
@@ -84,6 +87,8 @@ class IdpUser
     public function setUsername(string $u): static { $this->username = $u; return $this; }
     public function getPassword(): string { return $this->password; }
     public function setPassword(string $p): static { $this->password = $p; return $this; }
+    public function getLegacySalt(): ?string { return $this->legacySalt; }
+    public function setLegacySalt(?string $salt): static { $this->legacySalt = $salt; return $this; }
     public function getNtPasswordHash(): ?string { return $this->ntPasswordHash; }
     public function setNtPasswordHash(?string $hash): static { $this->ntPasswordHash = $hash; return $this; }
     public function getAttributes(): array { return $this->attributes; }
@@ -93,6 +98,7 @@ class IdpUser
     public function isActive(): bool { return $this->isActive; }
     public function setIsActive(bool $a): static { $this->isActive = $a; return $this; }
     public function getLastLoginAt(): ?\DateTimeImmutable { return $this->lastLoginAt; }
+    public function setLastLoginAt(?\DateTimeImmutable $lastLoginAt): static { $this->lastLoginAt = $lastLoginAt; return $this; }
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
     public function getUpdatedAt(): \DateTimeImmutable { return $this->updatedAt; }
 

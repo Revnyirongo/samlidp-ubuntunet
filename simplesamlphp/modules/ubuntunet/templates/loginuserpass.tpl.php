@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{if isset($pagetitle)}{$pagetitle|escape} — {/if}{$tenant_name|default:'UbuntuNet IdP'}</title>
+<title>{if isset($pagetitle)}{$pagetitle|escape} — {/if}{$tenant_name|default:'eduID.africa'}</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -23,7 +23,7 @@
         {$tenant_name|default:'U'|truncate:1:'':true}
       </div>
     {/if}
-    <h1 class="text-2xl font-bold text-white">{$tenant_name|default:'UbuntuNet IdP'|escape}</h1>
+    <h1 class="text-2xl font-bold text-white">{$tenant_name|default:'eduID.africa'|escape}</h1>
     <p class="text-slate-400 text-sm mt-1">Sign in with your institutional credentials</p>
   </div>
 
@@ -120,7 +120,7 @@
 
   {# Footer #}
   <p class="text-center text-xs text-slate-500 mt-6">
-    Powered by <a href="{$service_home_url|default:'#'|escape}" class="hover:text-slate-300">Managed IdP Service</a>
+    Powered by <a href="{$service_home_url|default:'#'|escape}" class="hover:text-slate-300">eduID.africa</a>
     {if isset($privacy_url)}&nbsp;·&nbsp;<a href="{$privacy_url|escape}" class="hover:text-slate-300">{t}Privacy{/t}</a>{/if}
   </p>
 </div>

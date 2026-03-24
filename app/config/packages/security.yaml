@@ -3,6 +3,8 @@ security:
         App\Entity\User:
             algorithm: bcrypt
             cost: 13
+            migrate_from:
+                - sha512
 
     providers:
         app_user_provider:

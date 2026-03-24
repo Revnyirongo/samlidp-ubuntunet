@@ -56,22 +56,7 @@ class DatabaseAuth extends Source
     public function login(string $username, string $password): array
     {
         $pdo = $this->getPdo();
-
-        $stmt = $pdo->prepare(<<<SQL
-            SELECT u.id, u.password, u.attributes, u.is_active
-            FROM idp_users u
-            JOIN tenants t ON t.id = u.tenant_id
-            WHERE t.slug = :slug
-              AND u.username = :username
-            LIMIT 1
-        SQL);
-
-        $stmt->execute([
-            'slug'     => $this->tenantSlug,
-            'username' => $username,
-        ]);
-
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $row = $this->findUserRow($pdo, $username);
 
         if ($row === false) {
             // User not found — same error as wrong password (don't leak username existence)
@@ -82,7 +67,28 @@ class DatabaseAuth extends Source
             throw new Error('NOACCESS');
         }
 
-        if (!password_verify($password, $row['password'])) {
+        $passwordValid = password_verify($password, $row['password']);
+        $legacySalt = is_string($row['legacy_salt'] ?? null) ? $row['legacy_salt'] : null;
+
+        if (!$passwordValid && $legacySalt !== null && $legacySalt !== '') {
+            $passwordValid = $this->verifyLegacySaltedHash((string) $row['password'], $password, $legacySalt);
+            if ($passwordValid) {
+                $ntHash = is_string($row['nt_password_hash'] ?? null) && $row['nt_password_hash'] !== ''
+                    ? (string) $row['nt_password_hash']
+                    : $this->computeNtPasswordHash($password);
+
+                try {
+                    $pdo->prepare("UPDATE idp_users SET password = :password, legacy_salt = NULL, nt_password_hash = :nt_hash WHERE id = :id")
+                        ->execute([
+                            'id' => $row['id'],
+                            'password' => password_hash($password, PASSWORD_BCRYPT),
+                            'nt_hash' => $ntHash,
+                        ]);
+                } catch (\Throwable) {}
+            }
+        }
+
+        if (!$passwordValid) {
             throw new Error('WRONGUSERPASS');
         }
 
@@ -95,8 +101,18 @@ class DatabaseAuth extends Source
         $attrs = json_decode($row['attributes'], true) ?? [];
 
         // Always ensure uid is set
-        if (!isset($attrs['uid'])) {
+        if (!isset($attrs['uid']) || !is_array($attrs['uid']) || ($attrs['uid'][0] ?? '') === '') {
             $attrs['uid'] = [$username];
+        }
+
+        if (!isset($attrs['eduPersonPrincipalName']) || !is_array($attrs['eduPersonPrincipalName']) || ($attrs['eduPersonPrincipalName'][0] ?? '') === '') {
+            $mail = is_array($attrs['mail'] ?? null) ? trim((string) ($attrs['mail'][0] ?? '')) : '';
+            $uid = trim((string) ($attrs['uid'][0] ?? $username));
+            $attrs['eduPersonPrincipalName'] = [$mail !== '' ? $mail : $uid];
+        }
+
+        if (!isset($attrs['urn:oid:1.3.6.1.4.1.5923.1.1.1.6']) || !is_array($attrs['urn:oid:1.3.6.1.4.1.5923.1.1.1.6']) || ($attrs['urn:oid:1.3.6.1.4.1.5923.1.1.1.6'][0] ?? '') === '') {
+            $attrs['urn:oid:1.3.6.1.4.1.5923.1.1.1.6'] = $attrs['eduPersonPrincipalName'];
         }
 
         return $attrs;
@@ -169,5 +185,87 @@ class DatabaseAuth extends Source
         );
 
         return $this->pdo;
+    }
+
+    /**
+     * @return array<string, mixed>|false
+     */
+    private function findUserRow(PDO $pdo, string $identifier): array|false
+    {
+        $stmt = $pdo->prepare(<<<SQL
+            SELECT u.id, u.username, u.password, u.legacy_salt, u.nt_password_hash, u.attributes, u.is_active
+            FROM idp_users u
+            JOIN tenants t ON t.id = u.tenant_id
+            WHERE t.slug = :slug
+              AND u.username = :username
+            LIMIT 1
+        SQL);
+
+        $stmt->execute([
+            'slug'     => $this->tenantSlug,
+            'username' => $identifier,
+        ]);
+
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (is_array($row)) {
+            return $row;
+        }
+
+        $normalized = strtolower(trim($identifier));
+        if ($normalized === '') {
+            return false;
+        }
+
+        $fallbackStmt = $pdo->prepare(<<<SQL
+            SELECT u.id, u.username, u.password, u.legacy_salt, u.nt_password_hash, u.attributes, u.is_active
+            FROM idp_users u
+            JOIN tenants t ON t.id = u.tenant_id
+            WHERE t.slug = :slug
+        SQL);
+        $fallbackStmt->execute(['slug' => $this->tenantSlug]);
+
+        while ($candidate = $fallbackStmt->fetch(PDO::FETCH_ASSOC)) {
+            $attrs = json_decode((string) ($candidate['attributes'] ?? '{}'), true);
+            if (!is_array($attrs)) {
+                $attrs = [];
+            }
+
+            $aliases = array_filter([
+                strtolower((string) ($candidate['username'] ?? '')),
+                strtolower((string) (($attrs['mail'][0] ?? null) ?: '')),
+                strtolower((string) (($attrs['eduPersonPrincipalName'][0] ?? null) ?: '')),
+                strtolower((string) (($attrs['uid'][0] ?? null) ?: '')),
+            ]);
+
+            if (in_array($normalized, $aliases, true)) {
+                return $candidate;
+            }
+        }
+
+        return false;
+    }
+
+    private function verifyLegacySaltedHash(string $encoded, string $plainPassword, string $salt): bool
+    {
+        $digest = openssl_digest($plainPassword . $salt, 'sha512', true);
+        if ($digest === false) {
+            return false;
+        }
+
+        return hash_equals($encoded, base64_encode($digest . $salt));
+    }
+
+    private function computeNtPasswordHash(string $password): ?string
+    {
+        try {
+            $utf16le = iconv('UTF-8', 'UTF-16LE', $password);
+            if ($utf16le === false) {
+                return null;
+            }
+
+            return strtoupper(hash('md4', $utf16le));
+        } catch (\Throwable) {
+            return null;
+        }
     }
 }

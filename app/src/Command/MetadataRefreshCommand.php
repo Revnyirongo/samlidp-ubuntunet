@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Command;
 
+use App\Repository\TenantRepository;
 use App\Service\MetadataService;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -20,6 +21,7 @@ class MetadataRefreshCommand extends Command
 {
     public function __construct(
         private readonly MetadataService $metadataService,
+        private readonly TenantRepository $tenantRepository,
     ) {
         parent::__construct();
     }
@@ -44,7 +46,7 @@ class MetadataRefreshCommand extends Command
         try {
             if ($tenantSlug) {
                 // Single tenant
-                $tenant = $this->metadataService->getTenantRepository()->findOneBy(['slug' => $tenantSlug]);
+                $tenant = $this->tenantRepository->findActiveBySlug((string) $tenantSlug);
                 if (!$tenant) {
                     $io->error("Tenant '{$tenantSlug}' not found.");
                     return Command::FAILURE;

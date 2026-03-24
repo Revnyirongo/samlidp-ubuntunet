@@ -117,7 +117,7 @@ class TenantRegistrationRequestController extends AbstractController
         );
 
         $this->addFlash($mailFailed ? 'warning' : 'success', $mailFailed
-            ? 'Registration approved, but the invitation email could not be sent. Use "Send Invite" from Local Users after fixing mail delivery.'
+            ? 'Registration request approved. The account invitation could not be delivered at this time.'
             : 'Registration request approved and invitation email sent.');
 
         return $this->redirectToRoute('admin_tenant_registration_request_index', ['tenant' => $tenant->getId()]);

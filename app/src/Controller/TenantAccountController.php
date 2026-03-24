@@ -16,6 +16,7 @@ use App\Service\MailerStatus;
 use App\Service\NotificationMailer;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -104,14 +105,17 @@ class TenantAccountController extends AbstractController
                     }
 
                     if (!$this->mailerStatus->isEnabled()) {
-                        $this->addFlash('warning', 'Registration request submitted, but email delivery is disabled on this server. No notification emails were sent.');
+                        $this->addFlash('warning', 'Request submitted. Email notifications are currently unavailable.');
                     } elseif ($mailFailed) {
-                        $this->addFlash('warning', 'Registration request submitted, but email delivery failed. Your tenant administrators can still review it in the admin portal.');
+                        $this->addFlash('warning', 'Request submitted. Notification email delivery could not be completed.');
                     } else {
-                        $this->addFlash('success', 'Registration request submitted. You will receive an email once a tenant administrator reviews it.');
+                        $this->addFlash('success', 'Request submitted. You will be notified after review.');
                     }
 
-                    return $this->redirectToRoute('app_tenant_register', ['slug' => $tenant->getSlug()]);
+                    return $this->redirectToRoute('app_tenant_register', [
+                        'slug' => $tenant->getSlug(),
+                        'submitted' => 1,
+                    ]);
                 }
             }
         }
@@ -119,6 +123,7 @@ class TenantAccountController extends AbstractController
         return $this->render('security/tenant_register.html.twig', [
             'tenant' => $tenant,
             'formData' => $data,
+            'submitted' => $request->query->getBoolean('submitted'),
             'mailer_enabled' => $this->mailerStatus->isEnabled(),
             'auth_brand_logo' => $tenant->getLogoUrl(),
             'auth_brand_name' => $tenant->getName(),
@@ -154,17 +159,22 @@ class TenantAccountController extends AbstractController
             }
 
             if (!$this->mailerStatus->isEnabled()) {
-                $this->addFlash('warning', 'Mail delivery is currently disabled on this server. No password reset email was sent.');
+                $this->addFlash('warning', 'Reset request accepted. Email delivery is currently unavailable.');
             } elseif ($mailFailed) {
-                $this->addFlash('warning', 'If that account exists, the reset request was accepted but email delivery failed. Contact your institution IT helpdesk.');
+                $this->addFlash('warning', 'Reset request accepted, but the email could not be delivered.');
             } else {
-                $this->addFlash('success', 'If that account exists, a password reset email has been sent.');
+                $this->addFlash('success', 'If that account exists, a reset link has been sent.');
             }
-            return $this->redirectToRoute('app_tenant_forgot_password', ['slug' => $tenant->getSlug()]);
+            return $this->redirectToRoute('app_tenant_forgot_password', [
+                'slug' => $tenant->getSlug(),
+                'sent' => 1,
+            ]);
         }
 
         return $this->render('security/tenant_forgot_password.html.twig', [
             'tenant' => $tenant,
+            'sent' => $request->query->getBoolean('sent'),
+            'updated' => $request->query->getBoolean('updated'),
             'mailer_enabled' => $this->mailerStatus->isEnabled(),
             'auth_brand_logo' => $tenant->getLogoUrl(),
             'auth_brand_name' => $tenant->getName(),
@@ -215,9 +225,13 @@ class TenantAccountController extends AbstractController
                 }
 
                 $this->addFlash($mailFailed ? 'warning' : 'success', $mailFailed
-                    ? 'Password updated, but the confirmation email could not be sent. Return to your service provider and start login again.'
-                    : 'Password updated. Return to your service provider and start login again.');
-                return $this->redirectToRoute('app_tenant_forgot_password', ['slug' => $tenant->getSlug()]);
+                    ? 'Password updated. The confirmation email could not be sent.'
+                    : 'Password updated successfully.');
+
+                return $this->redirectToRoute('app_tenant_forgot_password', [
+                    'slug' => $tenant->getSlug(),
+                    'updated' => 1,
+                ]);
             }
         }
 
@@ -229,6 +243,17 @@ class TenantAccountController extends AbstractController
             'auth_brand_logo' => $tenant->getLogoUrl(),
             'auth_brand_name' => $tenant->getName(),
         ]);
+    }
+
+    #[Route('/tenant/{slug}/continue-to-login', name: 'app_tenant_continue_to_login', methods: ['GET'])]
+    public function continueToLogin(string $slug): RedirectResponse
+    {
+        $tenant = $this->tenantRepo->findActiveBySlug($slug);
+        if ($tenant === null || !$tenant->usesDatabaseAuth()) {
+            throw $this->createNotFoundException('Tenant not found.');
+        }
+
+        return $this->redirect($this->tenantSimpleSamlLoginUrl($tenant->getSlug()));
     }
 
     /**
@@ -248,5 +273,17 @@ class TenantAccountController extends AbstractController
         }
 
         return array_values(array_unique(array_filter($recipients)));
+    }
+
+    private function tenantSimpleSamlLoginUrl(string $slug): string
+    {
+        return sprintf('https://%s.%s/simplesaml/', $slug, $this->hostFromRequestBase());
+    }
+
+    private function hostFromRequestBase(): string
+    {
+        $host = (string) $this->getParameter('samlidp.hostname');
+
+        return preg_replace('/^https?:\/\//', '', $host) ?: $host;
     }
 }

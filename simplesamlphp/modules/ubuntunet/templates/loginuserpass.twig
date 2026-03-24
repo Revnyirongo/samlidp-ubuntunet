@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{% if pagetitle is defined and pagetitle %}{{ pagetitle|e }} | {% endif %}{{ tenant_name|default('UbuntuNet IdP')|e }}</title>
+<title>{% if pagetitle is defined and pagetitle %}{{ pagetitle|e }} | {% endif %}{{ tenant_name|default('eduID.africa')|e }}</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -21,7 +21,7 @@
         {{ tenant_name|default('U')|slice(0, 1)|upper|e }}
       </div>
     {% endif %}
-    <h1 class="text-2xl font-bold text-white">{{ tenant_name|default('UbuntuNet IdP')|e }}</h1>
+    <h1 class="text-2xl font-bold text-white">{{ tenant_name|default('eduID.africa')|e }}</h1>
     <p class="text-slate-400 text-sm mt-1">Sign in with your institutional credentials</p>
   </div>
 
@@ -126,7 +126,7 @@
   </div>
 
   <p class="text-center text-xs text-slate-500 mt-6">
-    Powered by <a href="{{ service_home_url|default('#')|e }}" class="hover:text-slate-300">Managed IdP Service</a>
+    Powered by <a href="{{ service_home_url|default('#')|e }}" class="hover:text-slate-300">eduID.africa</a>
     {% if privacy_url is defined and privacy_url %}&nbsp;·&nbsp;<a href="{{ privacy_url|e }}" class="hover:text-slate-300">Privacy</a>{% endif %}
   </p>
 </div>

@@ -1,9 +1,23 @@
 {% extends 'security/_auth_layout.html.twig' %}
 
 {% block auth_title %}Create your {{ tenant.name }} account{% endblock %}
-{% block auth_subtitle %}Submit your details for review by a tenant administrator. You will receive an email once the account is approved.{% endblock %}
+{% block auth_subtitle %}Submit your details for approval by a tenant administrator.{% endblock %}
 
 {% block auth_content %}
+{% if submitted %}
+<div class="space-y-4">
+    <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-900">
+        Your request has been submitted for review.
+    </div>
+    <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-600">
+        <p class="font-semibold text-slate-900">What happens next</p>
+        <p class="mt-2">A tenant administrator will review your request and send you a password setup link if approved.</p>
+    </div>
+    <div class="space-y-2 text-center text-sm text-slate-500">
+        <a href="{{ path('app_tenant_forgot_password', {slug: tenant.slug}) }}" class="font-semibold text-idp-600 hover:underline">Already approved? Set or reset your password</a>
+    </div>
+</div>
+{% else %}
 <form method="post" class="space-y-5">
     <input type="hidden" name="_token" value="{{ csrf_token('tenant_register_' ~ tenant.slug) }}">
     <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
@@ -109,4 +123,5 @@ if (fullNameField) {
     }
 });
 </script>
+{% endif %}
 {% endblock %}

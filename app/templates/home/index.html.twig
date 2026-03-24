@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UbuntuNet Access Hub</title>
+    <title>eduID.africa</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -52,18 +52,14 @@
                 <div class="flex items-center gap-4">
                     <div class="flex h-14 w-14 items-center justify-center rounded-3xl bg-gradient-to-br from-ubuntu-500 to-idp-600 text-lg font-extrabold text-white shadow-sm">U</div>
                     <div>
-                        <div class="text-xs font-extrabold uppercase tracking-[0.22em] text-slate-400">UbuntuNet Alliance</div>
+                        <div class="text-xs font-extrabold uppercase tracking-[0.22em] text-slate-400">Research and Education Identity</div>
                         <div class="flex flex-wrap items-center gap-2">
-                            <h1 class="text-2xl font-extrabold tracking-tight sm:text-3xl">UbuntuNet Access Hub</h1>
+                            <h1 class="text-2xl font-extrabold tracking-tight sm:text-3xl">eduID.africa</h1>
                             <span class="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[0.16em] text-slate-500">v{{ app_version() }}</span>
                         </div>
                     </div>
                 </div>
                 <nav class="flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-600">
-                    <a href="/" class="rounded-full px-4 py-2 transition hover:bg-slate-100 hover:text-slate-900">Overview</a>
-                    <a href="/login" class="rounded-full px-4 py-2 transition hover:bg-slate-100 hover:text-slate-900">Tenants</a>
-                    <a href="/login" class="rounded-full px-4 py-2 transition hover:bg-slate-100 hover:text-slate-900">Federations</a>
-                    <a href="/login" class="rounded-full px-4 py-2 transition hover:bg-slate-100 hover:text-slate-900">Service Providers</a>
                     <a href="{{ docs_url }}" target="_blank" rel="noopener" class="rounded-full border border-slate-300 px-4 py-2 text-slate-700 transition hover:bg-slate-50">Documentation</a>
                     <a href="/login" class="rounded-full bg-idp-600 px-5 py-2.5 text-white transition hover:bg-idp-500">Login</a>
                 </nav>
@@ -80,20 +76,14 @@
             <div class="grid gap-8 px-6 py-8 sm:px-8 sm:py-10 lg:grid-cols-[1.02fr_0.98fr] lg:px-10">
                 <div class="flex flex-col justify-between">
                     <div>
-                        <div class="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/70">
-                            Managed identity for higher education and research
-                        </div>
                         <h2 class="mt-6 max-w-3xl text-4xl font-extrabold tracking-tight sm:text-5xl">
-                            Launch a standards-ready institutional IdP without building the stack from scratch.
+                            Managed identity for research and education.
                         </h2>
-                        <p class="mt-5 max-w-2xl text-sm leading-7 text-white/72 sm:text-base">
-                            UbuntuNet Access Hub packages tenant branding, metadata generation, service provider onboarding, account lifecycle, attribute release, and federation operations into one deployable platform built for institutional rollouts across Africa.
-                        </p>
+                        <p class="mt-5 max-w-2xl text-sm leading-7 text-white/72 sm:text-base">Deploy tenant IdPs, connect services, and operate federation metadata from one platform.</p>
                     </div>
                     <div class="mt-8 flex flex-wrap gap-3">
-                        <a href="/login" class="rounded-2xl bg-white px-5 py-3 text-sm font-bold text-slate-900 transition hover:bg-slate-100">Open Admin Console</a>
-                        <a href="{{ docs_url }}" target="_blank" rel="noopener" class="rounded-2xl border border-white/20 px-5 py-3 text-sm font-bold text-white transition hover:bg-white/10">Read Deployment Docs</a>
-                        <a href="/login" class="rounded-2xl border border-white/20 px-5 py-3 text-sm font-bold text-white transition hover:bg-white/10">View Federations</a>
+                        <a href="/login" class="rounded-2xl bg-white px-5 py-3 text-sm font-bold text-slate-900 transition hover:bg-slate-100">Open Console</a>
+                        <a href="{{ docs_url }}" target="_blank" rel="noopener" class="rounded-2xl border border-white/20 px-5 py-3 text-sm font-bold text-white transition hover:bg-white/10">Documentation</a>
                     </div>
                     <dl class="mt-8 grid gap-3 sm:grid-cols-3">
                         <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
@@ -102,18 +92,18 @@
                         </div>
                         <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
                             <dt class="text-xs font-semibold uppercase tracking-[0.14em] text-white/55">Federation</dt>
-                            <dd class="mt-2 text-sm font-semibold text-white">Rich IdP metadata and SP onboarding</dd>
+                            <dd class="mt-2 text-sm font-semibold text-white">Metadata and SP onboarding</dd>
                         </div>
                         <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
                             <dt class="text-xs font-semibold uppercase tracking-[0.14em] text-white/55">Operations</dt>
-                            <dd class="mt-2 text-sm font-semibold text-white">Containerized deployment and admin workflows</dd>
+                            <dd class="mt-2 text-sm font-semibold text-white">Containerized deployment</dd>
                         </div>
                     </dl>
                 </div>
 
                 <div class="flex items-center justify-center">
                     <div class="w-full max-w-2xl rounded-[2rem] border border-white/10 bg-white/6 p-4 shadow-[0_20px_50px_rgba(15,23,42,0.25)] backdrop-blur">
-                        <img src="/assets/access-hub-hero.svg" alt="UbuntuNet Access Hub platform illustration" class="w-full rounded-[1.5rem]">
+                        <img src="/assets/access-hub-hero.svg" alt="eduID.africa platform illustration" class="w-full rounded-[1.5rem]">
                     </div>
                 </div>
             </div>
@@ -121,68 +111,40 @@
 
         <section class="mt-6 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
             <div class="rounded-[2rem] border border-slate-200/70 bg-white/92 p-6 shadow-[0_20px_45px_rgba(15,23,42,0.06)]">
-                <div class="text-xs font-extrabold uppercase tracking-[0.18em] text-slate-400">What is included</div>
+                <div class="text-xs font-extrabold uppercase tracking-[0.18em] text-slate-400">Included</div>
                 <ul class="mt-4 space-y-3 text-sm leading-6 text-slate-600">
-                    <li>Institution-scoped tenant IdPs with branding, contacts, and federation publication controls.</li>
-                    <li>Service provider metadata import, approval, requested-attribute review, and release policy management.</li>
-                    <li>Self-service account registration, invitations, password reset, and tenant-admin approval workflows.</li>
-                    <li>eduroam authentication onboarding for supported backends, alongside federation and metadata automation.</li>
+                    <li>Tenant IdPs with branding and publication controls.</li>
+                    <li>Service provider onboarding and attribute release management.</li>
+                    <li>Invites, password reset, and tenant-user approval workflows.</li>
+                    <li>Federation metadata automation.</li>
                 </ul>
             </div>
             <div class="grid gap-4 md:grid-cols-2">
                 <article class="rounded-[2rem] border border-slate-200/70 bg-white/92 p-6 shadow-[0_20px_45px_rgba(15,23,42,0.06)]">
-                    <div class="text-xs font-extrabold uppercase tracking-[0.18em] text-slate-400">Built with</div>
+                    <div class="text-xs font-extrabold uppercase tracking-[0.18em] text-slate-400">Stack</div>
                     <h3 class="mt-3 text-lg font-extrabold tracking-tight text-slate-900">Operational stack</h3>
-                    <p class="mt-2 text-sm leading-6 text-slate-600">Symfony, SimpleSAMLphp, PostgreSQL, Redis, and Docker-based deployment with generated per-tenant configuration.</p>
+                    <p class="mt-2 text-sm leading-6 text-slate-600">Symfony, SimpleSAMLphp, PostgreSQL, Redis, and Docker.</p>
                 </article>
                 <article class="rounded-[2rem] border border-slate-200/70 bg-white/92 p-6 shadow-[0_20px_45px_rgba(15,23,42,0.06)]">
                     <div class="text-xs font-extrabold uppercase tracking-[0.18em] text-slate-400">Documentation</div>
-                    <h3 class="mt-3 text-lg font-extrabold tracking-tight text-slate-900">Rollout guidance</h3>
-                    <p class="mt-2 text-sm leading-6 text-slate-600">Deployment notes, federation practices, and operating procedures are intended to live on GitLab for institutional teams.</p>
+                    <h3 class="mt-3 text-lg font-extrabold tracking-tight text-slate-900">Deployment guidance</h3>
+                    <p class="mt-2 text-sm leading-6 text-slate-600">Operational documentation is intended to live on GitLab.</p>
                 </article>
                 <article class="rounded-[2rem] border border-slate-200/70 bg-white/92 p-6 shadow-[0_20px_45px_rgba(15,23,42,0.06)] md:col-span-2">
-                    <div class="text-xs font-extrabold uppercase tracking-[0.18em] text-slate-400">Common next steps</div>
+                    <div class="text-xs font-extrabold uppercase tracking-[0.18em] text-slate-400">Access</div>
                     <div class="mt-4 grid gap-3 sm:grid-cols-3">
-                        <a href="/login" class="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-idp-500 hover:text-idp-600">Review tenants and IdPs</a>
-                        <a href="/login" class="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-idp-500 hover:text-idp-600">Manage federations</a>
+                        <a href="/login" class="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-idp-500 hover:text-idp-600">Admin portal</a>
+                        <a href="/login" class="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-idp-500 hover:text-idp-600">Tenant sign-in</a>
                         <a href="{{ docs_url }}" target="_blank" rel="noopener" class="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-idp-500 hover:text-idp-600">Open documentation</a>
                     </div>
-                    <p class="mt-4 text-xs leading-5 text-slate-500">Administrative and operational screens require sign-in. Public visitors are redirected to login when they try to access protected areas.</p>
+                    <p class="mt-4 text-xs leading-5 text-slate-500">Protected areas require sign-in.</p>
                 </article>
-            </div>
-        </section>
-
-        <section class="mt-6 rounded-[2rem] border border-slate-200/70 bg-white/92 p-6 shadow-[0_20px_45px_rgba(15,23,42,0.06)]">
-            <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                    <div class="text-xs font-extrabold uppercase tracking-[0.18em] text-slate-400">Platform posture</div>
-                    <h3 class="mt-2 text-2xl font-extrabold tracking-tight text-slate-900">Made for repeatable institutional deployment</h3>
-                </div>
-                <a href="/login" class="rounded-2xl bg-idp-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-idp-500">Launch the platform</a>
-            </div>
-            <div class="mt-5 grid gap-4 lg:grid-cols-4">
-                <div class="rounded-2xl bg-slate-50 px-4 py-4">
-                    <div class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Federation</div>
-                    <p class="mt-2 text-sm text-slate-600">Metadata publication, discovery support, and federation export.</p>
-                </div>
-                <div class="rounded-2xl bg-slate-50 px-4 py-4">
-                    <div class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Identity lifecycle</div>
-                    <p class="mt-2 text-sm text-slate-600">Invites, password reset, self-registration, and tenant approval workflows.</p>
-                </div>
-                <div class="rounded-2xl bg-slate-50 px-4 py-4">
-                    <div class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Attribute control</div>
-                    <p class="mt-2 text-sm text-slate-600">Tenant defaults and per-service-provider release decisions.</p>
-                </div>
-                <div class="rounded-2xl bg-slate-50 px-4 py-4">
-                    <div class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Operations</div>
-                    <p class="mt-2 text-sm text-slate-600">Structured errors, request IDs, and documented deployment paths.</p>
-                </div>
             </div>
         </section>
 
         <footer class="mt-6 flex flex-col gap-2 px-1 pb-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-            <div>UbuntuNet Access Hub v{{ app_version() }}</div>
-            <div>Production release for managed federated identity operations.</div>
+            <div>eduID.africa v{{ app_version() }}</div>
+            <div>Managed identity platform.</div>
         </footer>
     </main>
 </body>

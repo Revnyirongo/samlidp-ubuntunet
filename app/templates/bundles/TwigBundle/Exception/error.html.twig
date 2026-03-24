@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex,nofollow">
-    <title>{{ status_code|default(500) }} {{ status_text|default('Error') }} | UbuntuNet Managed IdP</title>
+    <title>{{ status_code|default(500) }} {{ status_text|default('Error') }} | eduID.africa</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -38,7 +38,7 @@
                 <div class="mb-10 inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-2">
                     <div class="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-ubuntu-500 to-idp-600 text-sm font-extrabold text-white">U</div>
                     <div>
-                        <div class="text-sm font-extrabold tracking-tight">UbuntuNet Managed IdP</div>
+                        <div class="text-sm font-extrabold tracking-tight">eduID.africa</div>
                         <div class="text-xs text-white/60">Service status</div>
                     </div>
                 </div>
@@ -51,7 +51,7 @@
                 <div class="mx-auto max-w-md">
                     <div class="mb-6 lg:hidden">
                         <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-ubuntu-500 to-idp-600 text-base font-extrabold text-white shadow-sm">U</div>
-                        <div class="text-sm font-bold uppercase tracking-[0.16em] text-slate-400">UbuntuNet Managed IdP</div>
+                        <div class="text-sm font-bold uppercase tracking-[0.16em] text-slate-400">eduID.africa</div>
                     </div>
 
                     <div class="text-sm font-bold uppercase tracking-[0.16em] text-slate-400">{% block error_kicker %}Request failed{% endblock %}</div>

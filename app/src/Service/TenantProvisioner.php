@@ -78,7 +78,7 @@ class TenantProvisioner
         $email = (new Email())
             ->from(sprintf('"%s" <%s>', $this->mailerFromName, $this->mailerFromAddress))
             ->to($tenant->getTechnicalContactEmail())
-            ->subject(sprintf('[Managed IdP] Your IdP "%s" is ready', $tenant->getName()))
+            ->subject(sprintf('[eduID.africa] Your IdP "%s" is ready', $tenant->getName()))
             ->html($this->buildWelcomeHtml($tenant))
             ->text($this->buildWelcomeText($tenant));
 
@@ -100,7 +100,7 @@ class TenantProvisioner
 <head><meta charset="UTF-8"><title>Your IdP is Ready</title></head>
 <body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
   <div style="background:#1a365d; padding:20px; border-radius:8px 8px 0 0;">
-    <h1 style="color:#fff; margin:0; font-size:22px;">Your Managed IdP Is Ready</h1>
+    <h1 style="color:#fff; margin:0; font-size:22px;">Your eduID.africa IdP Is Ready</h1>
   </div>
   <div style="border:1px solid #ddd; border-top:none; padding:24px; border-radius:0 0 8px 8px;">
     <p>Dear {$greeting},</p>

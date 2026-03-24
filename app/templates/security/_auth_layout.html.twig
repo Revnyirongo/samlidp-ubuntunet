@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex,nofollow">
-    <title>{% block auth_title %}UbuntuNet Managed IdP{% endblock %}</title>
+    <title>{% block auth_title %}eduID.africa{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -44,7 +44,7 @@
                         {% endif %}
                     </div>
                     <div>
-                        <div class="text-sm font-extrabold tracking-tight">{{ auth_brand_name|default('UbuntuNet Managed IdP') }}</div>
+                        <div class="text-sm font-extrabold tracking-tight">{{ auth_brand_name|default('eduID.africa') }}</div>
                         <div class="text-xs text-white/60">Account services</div>
                     </div>
                 </div>
@@ -85,7 +85,7 @@
                     {% block auth_content %}{% endblock %}
 
                     <div class="mt-6 text-xs text-slate-400">
-                        UbuntuNet Managed IdP v{{ app_version() }}
+                        eduID.africa v{{ app_version() }}
                     </div>
                 </div>
             </section>
