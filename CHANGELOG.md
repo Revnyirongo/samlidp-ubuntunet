@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and this project follows Semantic Versioning.
 
+## [1.0.5] - 2026-03-24
+
+### Fixed
+- Restored generic-yet-live tenant nginx host matching so tenant metadata and SSO endpoints continue to work on deployed domains.
+- Fixed the audit log tenant filter template so the audit screen no longer throws a Twig `500`.
+
 ## [1.0.4] - 2026-03-24
 
 ### Changed

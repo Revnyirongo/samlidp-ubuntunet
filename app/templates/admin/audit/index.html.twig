@@ -15,7 +15,7 @@
             class="border border-gray-300 rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-idp-500 focus:border-transparent outline-none">
         <option value="">All tenants</option>
         {% for tenant in tenants %}
-        <option value="{{ tenant.id }}" {{ tenantId == tenant.id|string ? 'selected' : '' }}>
+        <option value="{{ tenant.id }}" {{ tenantId == tenant.id ? 'selected' : '' }}>
             {{ tenant.name }}
         </option>
         {% endfor %}
