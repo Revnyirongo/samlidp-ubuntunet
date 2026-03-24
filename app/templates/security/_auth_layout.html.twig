@@ -40,7 +40,7 @@
                         {% if auth_brand_logo is defined and auth_brand_logo %}
                             <img src="{{ auth_brand_logo }}" alt="{{ auth_brand_name|default('Tenant') }}" class="h-full w-full object-contain bg-white p-1.5">
                         {% else %}
-                            <img src="{{ asset('assets/default-security-shield.svg') }}" alt="Security shield" class="h-full w-full object-contain bg-white p-1.5">
+                            <img src="/assets/default-security-shield.svg" alt="Security shield" class="h-full w-full object-contain bg-white p-1.5">
                         {% endif %}
                     </div>
                     <div>
@@ -59,7 +59,7 @@
                             {% if auth_brand_logo is defined and auth_brand_logo %}
                                 <img src="{{ auth_brand_logo }}" alt="{{ auth_brand_name|default('Tenant') }}" class="h-full w-full object-contain bg-white p-1.5">
                             {% else %}
-                                <img src="{{ asset('assets/default-security-shield.svg') }}" alt="Security shield" class="h-full w-full object-contain bg-white p-1.5">
+                                <img src="/assets/default-security-shield.svg" alt="Security shield" class="h-full w-full object-contain bg-white p-1.5">
                             {% endif %}
                         </div>
                         <h1 class="text-3xl font-extrabold tracking-tight text-slate-900">{{ block('auth_title') }}</h1>

@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and this project follows Semantic Versioning.
 
+## [1.0.7] - 2026-03-24
+
+### Fixed
+- Switched the default shield image references to direct public paths so admin and auth pages render without requiring a frontend asset manifest.
+
 ## [1.0.6] - 2026-03-24
 
 ### Fixed
