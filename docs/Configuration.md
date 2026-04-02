@@ -1,8 +1,8 @@
 # Configuration
 
-## Primary Environment Variables
+## Core Environment Variables
 
-### Core application
+### Application
 
 - `APP_ENV`
 - `APP_SECRET`
@@ -29,6 +29,11 @@
 - `REDIS_PASSWORD`
 - `REDIS_URL`
 
+### Container DNS
+
+- `DNS_RESOLVER_PRIMARY`
+- `DNS_RESOLVER_SECONDARY`
+
 ### Mail
 
 - `MAILER_DSN`
@@ -54,7 +59,7 @@
 
 ## Database Configuration
 
-PostgreSQL is the primary application database.
+The primary application database is PostgreSQL.
 
 Typical container-local configuration:
 
@@ -62,11 +67,11 @@ Typical container-local configuration:
 DATABASE_URL=postgresql://samlidp:strong-password@db:5432/samlidp?serverVersion=16&charset=utf8
 ```
 
-External PostgreSQL can also be used by setting the host and credentials accordingly.
+External PostgreSQL can be used by updating the host, port, and credentials accordingly.
 
 ## Mail Configuration
 
-The platform uses Symfony Mailer. Example:
+The application uses Symfony Mailer. Example:
 
 ```env
 MAILER_DSN=smtp://user:password@smtp.example.com:587?encryption=tls&auth_mode=login
@@ -74,7 +79,7 @@ MAILER_FROM_ADDRESS=noreply@example.com
 MAILER_FROM_NAME="Managed Identity Service"
 ```
 
-If mail is disabled or misconfigured, registration and reset workflows can accept requests while email delivery fails. Operators should validate outbound mail during installation.
+Validate outbound mail during installation. Password reset, invitation, and registration workflows depend on it.
 
 ## SimpleSAMLphp Secrets
 
@@ -90,19 +95,19 @@ Generate the secret salt:
 openssl rand -base64 32
 ```
 
-## Legacy Import Configuration
+## Legacy Import
 
-If migrating from an older PostgreSQL deployment, set:
+If you are importing data from an older PostgreSQL deployment:
 
 ```env
 LEGACY_DATABASE_URL=postgresql://user:password@host:5432/legacy_db?serverVersion=16&charset=utf8
 ```
 
-This value is used for one-time migration into the current schema.
+Treat this as a controlled migration setting, not a permanent runtime dependency.
 
 ## Trusted Hosts
 
-For production, align trusted hosts with the main host and tenant wildcard:
+For production:
 
 ```env
 TRUSTED_HOSTS='^(example\.com|.*\.example\.com)$'
@@ -110,10 +115,10 @@ TRUSTED_HOSTS='^(example\.com|.*\.example\.com)$'
 
 ## Federation Metadata Sources
 
-If you want platform-wide refresh from one or more metadata aggregates:
+For platform-wide federation metadata refresh:
 
 ```env
 FEDERATION_METADATA_URLS=https://metadata.edugain.org/edugain-v2.xml
 ```
 
-Per-tenant aggregate URLs are configured from the tenant administration UI.
+Per-tenant federation aggregate URLs are configured from the administration UI.

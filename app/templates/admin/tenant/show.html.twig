@@ -3,7 +3,7 @@
 {% block page_title %}{{ tenant.name }}{% endblock %}
 
 {% block breadcrumb %}
-<nav class="text-sm text-gray-500 mt-1">
+<nav class="mt-1 text-sm text-gray-500">
     <a href="{{ path('admin_tenant_index') }}" class="hover:text-gray-700">Tenants</a>
     <span class="mx-2">/</span>
     <span class="text-gray-900">{{ tenant.name }}</span>
@@ -13,526 +13,157 @@
 {% block top_actions %}
     {% if tenant.usesDatabaseAuth %}
     <a href="{{ path('admin_tenant_user_index', {tenant: tenant.id}) }}"
-       class="inline-flex items-center gap-2 px-4 py-2 bg-idp-500 hover:bg-idp-600 text-white rounded-lg text-sm font-medium">
+       class="inline-flex items-center gap-2 rounded-lg bg-idp-500 px-4 py-2 text-sm font-medium text-white hover:bg-idp-600">
         Local Users
     </a>
     {% endif %}
-    {% if eduroam.enabled %}
-    <a href="{{ path('admin_tenant_eduroam', {id: tenant.id}) }}"
-       class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
-        eduroam Kit
-    </a>
-    {% endif %}
     <a href="{{ path('admin_tenant_edit', {id: tenant.id}) }}"
-       class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+       class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
         Edit
     </a>
 {% endblock %}
 
 {% block content %}
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-    {# ── Left column: IdP details ──────────────────────────── #}
-    <div class="lg:col-span-2 space-y-6">
-
-        {# Status + quick actions #}
-        <div class="bg-white rounded-xl border border-gray-200 p-6">
-            <div class="flex items-start justify-between">
-                <div>
-                    {% if tenant.logoUrl %}
-                    <img src="{{ tenant.logoUrl }}" alt="{{ tenant.name }} logo"
-                         class="mb-4 h-14 w-auto rounded-lg border border-gray-200 bg-white object-contain p-2">
-                    {% endif %}
-                    <div class="flex items-center gap-3 mb-1">
-                        <h2 class="text-lg font-semibold text-gray-900">{{ tenant.name }}</h2>
-                        {% if tenant.status == 'active' %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>Active
-                            </span>
-                        {% elseif tenant.status == 'pending' %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>Pending
-                            </span>
-                        {% else %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>Suspended
-                            </span>
-                        {% endif %}
-                    </div>
-                    <p class="text-sm text-gray-500">Slug: <code class="bg-gray-100 px-1.5 py-0.5 rounded text-xs">{{ tenant.slug }}</code></p>
-                </div>
-
-                <div class="flex gap-2">
-                    {% if is_granted('ROLE_SUPER_ADMIN') %}
-                        {% if tenant.status != 'active' %}
-                            <form action="{{ path('admin_tenant_activate', {id: tenant.id}) }}" method="post" class="inline">
-                                <input type="hidden" name="_token" value="{{ csrf_token('activate-' ~ tenant.id) }}">
-                                <button type="submit" class="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700">Activate</button>
-                            </form>
-                        {% else %}
-                            <form action="{{ path('admin_tenant_suspend', {id: tenant.id}) }}" method="post" class="inline">
-                                <input type="hidden" name="_token" value="{{ csrf_token('suspend-' ~ tenant.id) }}">
-                                <button type="submit" class="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-lg hover:bg-red-700"
-                                        onclick="return confirm('Suspend this tenant?')">Suspend</button>
-                            </form>
-                        {% endif %}
-                    {% endif %}
-                </div>
-            </div>
-
-            {# IdP URLs #}
-            <div class="mt-5 grid grid-cols-1 gap-3">
-                {% set urls = [
-                    {label: 'Metadata URL',     value: tenant.metadataUrl,  copy: true},
-                    {label: 'SSO Endpoint',     value: tenant.ssoUrl,       copy: true},
-                    {label: 'SLO Endpoint',     value: tenant.sloUrl,       copy: true},
-                    {label: 'SAML Entity ID',   value: tenant.entityId,     copy: true},
-                ] %}
-                {% for url in urls %}
-                <div class="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
-                    <span class="text-xs text-gray-500 w-28 flex-shrink-0">{{ url.label }}</span>
-                    <code class="text-xs text-gray-800 flex-1 truncate">{{ url.value }}</code>
-                    <button onclick="navigator.clipboard.writeText('{{ url.value }}')"
-                            class="text-gray-400 hover:text-gray-600 flex-shrink-0" title="Copy">
-                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-                    </button>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-
-        {# Configuration summary #}
-        <div class="bg-white rounded-xl border border-gray-200 p-6">
-            <h3 class="text-sm font-semibold text-gray-900 mb-4">Configuration</h3>
-            <dl class="grid grid-cols-2 gap-4">
-                <div>
-                    <dt class="text-xs text-gray-500 mb-1">Auth Type</dt>
-                    <dd class="text-sm font-medium text-gray-900">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                            {{ tenant.authType == 'ldap' ? 'bg-blue-100 text-blue-800' :
-                               tenant.authType == 'saml' ? 'bg-purple-100 text-purple-800' :
-                               tenant.authType == 'radius' ? 'bg-orange-100 text-orange-800' :
-                               'bg-emerald-100 text-emerald-800' }}">
-                            {{ tenant.usesDatabaseAuth ? 'POSTGRESQL / MYSQL' : tenant.authType|upper }}
-                        </span>
-                    </dd>
-                </div>
-                <div>
-                    <dt class="text-xs text-gray-500 mb-1">MFA Policy</dt>
-                    <dd class="text-sm font-medium text-gray-900 capitalize">{{ tenant.mfaPolicy }}</dd>
-                </div>
-                <div>
-                    <dt class="text-xs text-gray-500 mb-1">Technical Contact</dt>
-                    <dd class="text-sm text-gray-700">
-                        {% if tenant.technicalContactEmail %}
-                            <a href="mailto:{{ tenant.technicalContactEmail }}" class="text-idp-600 hover:underline">
-                                {{ tenant.technicalContactName ?? tenant.technicalContactEmail }}
-                            </a>
-                        {% else %}
-                            <span class="text-gray-400">Not set</span>
-                        {% endif %}
-                    </dd>
-                </div>
-                <div>
-                    <dt class="text-xs text-gray-500 mb-1">Organisation</dt>
-                    <dd class="text-sm text-gray-700">{{ tenant.organizationName ?? '—' }}</dd>
-                </div>
-                <div>
-                    <dt class="text-xs text-gray-500 mb-1">Published Federations</dt>
-                    <dd class="text-sm text-gray-700">
-                        {% if tenant.publishedFederations is empty %}
-                            <span class="text-gray-400">None configured</span>
-                        {% else %}
-                            <div class="flex flex-wrap gap-2">
-                                {% for federation in tenant.publishedFederations %}
-                                    <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">{{ federation }}</span>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                    </dd>
-                </div>
-                <div>
-                    <dt class="text-xs text-gray-500 mb-1">Metadata Last Refreshed</dt>
-                    <dd class="text-sm text-gray-700">
-                        {% if tenant.metadataLastRefreshed %}
-                            {{ tenant.metadataLastRefreshed|date('Y-m-d H:i') }} UTC
-                        {% else %}
-                            <span class="text-amber-600">Never</span>
-                        {% endif %}
-                    </dd>
-                </div>
-                <div>
-                    <dt class="text-xs text-gray-500 mb-1">Registered SPs</dt>
-                    <dd class="text-sm font-semibold text-gray-900">{{ spPagination.totalItemCount }}</dd>
-                </div>
-                {% if tenant.usesDatabaseAuth %}
-                <div>
-                    <dt class="text-xs text-gray-500 mb-1">Local Users</dt>
-                    <dd class="text-sm font-semibold text-gray-900">{{ tenant.users|length }}</dd>
-                </div>
-                {% endif %}
-                <div>
-                    <dt class="text-xs text-gray-500 mb-1">eduroam Realm</dt>
-                    <dd class="text-sm font-medium text-gray-900">{{ eduroam.enabled ? eduroam.realm : 'Disabled' }}</dd>
-                </div>
-                <div>
-                    <dt class="text-xs text-gray-500 mb-1">eduroam Backend</dt>
-                    <dd class="text-sm font-medium {{ eduroam.enabled and eduroam.supported ? 'text-green-700' : 'text-amber-700' }}">{{ eduroam.enabled ? eduroam.backendModeLabel : 'Not enabled' }}</dd>
-                </div>
-            </dl>
-
-            {# Config actions #}
-            <div class="mt-5 flex flex-wrap gap-2 pt-4 border-t border-gray-100">
-                <form action="{{ path('admin_tenant_regenerate_config', {id: tenant.id}) }}" method="post">
-                    <input type="hidden" name="_token" value="{{ csrf_token('regen-' ~ tenant.id) }}">
-                    <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium rounded-lg">
-                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                        Regenerate SSP Config
-                    </button>
-                </form>
-
-                <form action="{{ path('admin_tenant_refresh_metadata', {id: tenant.id}) }}" method="post">
-                    <input type="hidden" name="_token" value="{{ csrf_token('refresh-meta-' ~ tenant.id) }}">
-                    <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-medium rounded-lg">
-                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                        Refresh SP Metadata
-                    </button>
-                </form>
-
-                {% if is_granted('ROLE_SUPER_ADMIN') %}
-                <form action="{{ path('admin_tenant_regenerate_keypair', {id: tenant.id}) }}" method="post"
-                      onsubmit="return confirm('This will generate a NEW signing keypair. All SPs must be updated with the new IdP metadata. Continue?')">
-                    <input type="hidden" name="_token" value="{{ csrf_token('regen-key-' ~ tenant.id) }}">
-                    <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-medium rounded-lg">
-                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
-                        New Keypair
-                    </button>
-                </form>
-                {% endif %}
-            </div>
-
-            <div class="mt-5 rounded-xl border border-gray-200 bg-gray-50 px-4 py-4">
-                <div class="flex items-center justify-between gap-3">
-                    <div>
-                        <h4 class="text-sm font-semibold text-gray-900">Default Attribute Release</h4>
-                        <p class="mt-1 text-xs text-gray-500">Tenant-wide attributes released to approved SPs unless an SP-specific override is set.</p>
-                    </div>
-                    <a href="{{ path('admin_tenant_edit', {id: tenant.id}) }}" class="text-xs font-medium text-idp-600 hover:underline">Edit Policy</a>
-                </div>
-                {% set defaultAttrs = tenant.attributeReleasePolicy.default ?? [
-                    'uid',
-                    'mail',
-                    'cn',
-                    'sn',
-                    'givenName',
-                    'displayName',
-                    'eduPersonPrincipalName',
-                    'eduPersonAffiliation',
-                    'eduPersonScopedAffiliation',
-                    'schacHomeOrganization',
-                ] %}
-                <div class="mt-3 flex flex-wrap gap-2">
-                    {% for attr in defaultAttrs %}
-                        <span class="inline-flex items-center rounded-full bg-white px-3 py-1 text-xs font-medium text-gray-700 ring-1 ring-gray-200">{{ attr }}</span>
-                    {% endfor %}
-                </div>
-            </div>
-
-            <div class="mt-5 rounded-xl border border-gray-200 bg-gray-50 px-4 py-4">
-                <div class="flex items-center justify-between gap-3">
-                    <div>
-                        <h4 class="text-sm font-semibold text-gray-900">eduroam / FreeRADIUS</h4>
-                        <p class="mt-1 text-xs text-gray-500">Realm-aware deployment snippets for institutions using this tenant as an eduroam authentication source.</p>
-                    </div>
-                    {% if eduroam.enabled %}
-                    <a href="{{ path('admin_tenant_eduroam', {id: tenant.id}) }}" class="text-xs font-medium text-idp-600 hover:underline">Open Kit</a>
-                    {% else %}
-                    <a href="{{ path('admin_tenant_edit', {id: tenant.id}) }}" class="text-xs font-medium text-idp-600 hover:underline">Enable in settings</a>
-                    {% endif %}
-                </div>
-                {% if eduroam.enabled %}
-                <div class="mt-3 grid gap-3 sm:grid-cols-3">
-                    <div class="rounded-lg bg-white px-3 py-3 ring-1 ring-gray-200">
-                        <div class="text-xs text-gray-500">Realm</div>
-                        <div class="mt-1 text-sm font-semibold text-gray-900">{{ eduroam.realm }}</div>
-                    </div>
-                    <div class="rounded-lg bg-white px-3 py-3 ring-1 ring-gray-200">
-                        <div class="text-xs text-gray-500">EAP</div>
-                        <div class="mt-1 text-sm font-semibold text-gray-900">{{ eduroam.defaultEapMethod|upper }}</div>
-                    </div>
-                    <div class="rounded-lg bg-white px-3 py-3 ring-1 ring-gray-200">
-                        <div class="text-xs text-gray-500">Status</div>
-                        <div class="mt-1 text-sm font-semibold {{ eduroam.supported ? 'text-green-700' : 'text-amber-700' }}">
-                            {{ eduroam.supported ? 'Supported' : 'Backend change needed' }}
-                        </div>
-                    </div>
-                </div>
-                {% else %}
-                <p class="mt-3 text-sm text-gray-500">Enable the eduroam onboarding kit in the tenant settings to expose institution-specific FreeRADIUS guidance and generated snippets.</p>
-                {% endif %}
-            </div>
-
-            {% if tenant.publishedFederations is not empty %}
-            <div class="mt-5 rounded-xl border border-gray-200 bg-gray-50 px-4 py-4">
-                <h4 class="text-sm font-semibold text-gray-900">Federation Publishing URLs</h4>
-                <div class="mt-3 space-y-2">
-                    {% for federation in tenant.publishedFederations %}
-                    <div class="flex items-center gap-2 rounded-lg bg-white px-3 py-2 ring-1 ring-gray-200">
-                        <span class="w-28 flex-shrink-0 text-xs text-gray-500">{{ federation }}</span>
-                        <code class="flex-1 truncate text-xs text-gray-800">{{ app.request.schemeAndHttpHost }}/api/federation/{{ federation }}/metadata</code>
-                        <button onclick="navigator.clipboard.writeText('{{ app.request.schemeAndHttpHost }}/api/federation/{{ federation }}/metadata')"
-                                class="flex-shrink-0 text-gray-400 hover:text-gray-600" title="Copy">
-                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-                        </button>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-        </div>
-
-        {# Import SP Metadata #}
-        <div class="bg-white rounded-xl border border-gray-200 p-6" x-data="{tab: 'url'}">
-            <h3 class="text-sm font-semibold text-gray-900 mb-4">Import Service Provider</h3>
-            <form action="{{ path('admin_tenant_import_sp', {id: tenant.id}) }}" method="post" id="importSpForm">
-                <input type="hidden" name="_token" value="{{ csrf_token('import-sp-' ~ tenant.id) }}">
-
-                <div class="flex gap-1 mb-4 bg-gray-100 p-1 rounded-lg w-fit">
-                    <button type="button" onclick="switchTab('url')" id="tab-url"
-                            class="px-3 py-1.5 text-xs font-medium rounded-md bg-white shadow text-gray-900">
-                        From URL
-                    </button>
-                    <button type="button" onclick="switchTab('xml')" id="tab-xml"
-                            class="px-3 py-1.5 text-xs font-medium rounded-md text-gray-600 hover:text-gray-900">
-                        Paste XML
-                    </button>
-                </div>
-
-                <div id="pane-url">
-                    <label class="block text-xs text-gray-600 mb-1.5">SP Metadata URL</label>
-                    <input type="url" name="metadata_url"
-                           placeholder="https://sp.example.org/saml2/metadata"
-                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-idp-500 focus:border-transparent">
-                </div>
-                <div id="pane-xml" class="hidden">
-                    <label class="block text-xs text-gray-600 mb-1.5">SP Metadata XML</label>
-                    <textarea name="metadata_xml" rows="6"
-                              placeholder="Paste the SP EntityDescriptor XML here..."
-                              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-idp-500 focus:border-transparent"></textarea>
-                    <button type="button" onclick="validateXml()"
-                            class="mt-1 text-xs text-idp-600 hover:underline">Validate XML</button>
-                    <span id="xmlValidationResult" class="ml-2 text-xs"></span>
-                </div>
-
-                <div class="mt-3 flex items-center gap-4">
-                    <label class="flex items-center gap-2 text-xs text-gray-600">
-                        <input type="checkbox" name="approve" value="1" class="rounded border-gray-300 text-idp-600">
-                        Auto-approve SP
-                    </label>
-                    <button type="submit"
-                            class="ml-auto px-4 py-2 bg-idp-500 hover:bg-idp-600 text-white text-sm font-medium rounded-lg">
-                        Import SP
-                    </button>
-                </div>
-            </form>
-        </div>
-
-        {% if tenant.usesDatabaseAuth %}
-        <div class="bg-white rounded-xl border border-gray-200 p-6">
-            <div class="flex items-center justify-between gap-4">
-                <div>
-                    <h3 class="text-sm font-semibold text-gray-900">Tenant User Store</h3>
-                    <p class="mt-1 text-sm text-gray-500">
-                        This tenant authenticates against the managed PostgreSQL/MySQL user store.
-                    </p>
-                </div>
-                <a href="{{ path('admin_tenant_user_index', {tenant: tenant.id}) }}"
-                   class="inline-flex items-center gap-2 rounded-lg bg-idp-500 px-4 py-2 text-sm font-medium text-white hover:bg-idp-600">
-                    Manage Users
-                </a>
-            </div>
-        </div>
+<div class="max-w-4xl space-y-6">
+    <section class="rounded-xl border border-gray-200 bg-white p-6">
+        {% if tenant.logoUrl %}
+        <img src="{{ tenant.logoUrl }}" alt="{{ tenant.name }} logo"
+             class="mb-4 h-14 w-auto rounded-lg border border-gray-200 bg-white object-contain p-2">
         {% endif %}
 
-        {# Service Providers list #}
-        <div class="bg-white rounded-xl border border-gray-200">
-            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-                <h3 class="text-sm font-semibold text-gray-900">Service Providers</h3>
-                <span class="text-xs text-gray-500">{{ spPagination.totalItemCount }} total</span>
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900">{{ tenant.name }}</h2>
+                <p class="mt-1 text-sm text-gray-500">Slug: <code class="rounded bg-gray-100 px-1.5 py-0.5 text-xs">{{ tenant.slug }}</code></p>
             </div>
+            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
+                {{ tenant.status == 'active' ? 'bg-green-100 text-green-800' : (tenant.status == 'pending' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800') }}">
+                {{ tenant.status|capitalize }}
+            </span>
+        </div>
+    </section>
 
-            {% if spPagination.totalItemCount == 0 %}
-            <div class="px-6 py-12 text-center">
-                <svg class="w-10 h-10 text-gray-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-                <p class="text-sm text-gray-500">No service providers yet. Import one above.</p>
+    <section class="rounded-xl border border-gray-200 bg-white p-6">
+        <h3 class="text-sm font-semibold text-gray-900">Endpoints</h3>
+        <dl class="mt-4 space-y-3">
+            <div>
+                <dt class="mb-1 text-xs text-gray-500">Metadata URL</dt>
+                <dd><code class="text-xs text-gray-800">{{ tenant.metadataUrl }}</code></dd>
             </div>
-            {% else %}
-            <div class="divide-y divide-gray-50">
-                {% for sp in spPagination %}
-                <div class="px-6 py-3 flex items-center gap-4 hover:bg-gray-50">
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-2">
-                            <span class="text-sm font-medium text-gray-900 truncate">
-                                {{ sp.displayName }}
-                            </span>
-                            {% if not sp.approved %}
-                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700">Pending approval</span>
-                            {% endif %}
-                            {% if sp.certificateExpiresAt and sp.certificateExpiresAt < date('+30 days') %}
-                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">Cert expiring</span>
-                            {% endif %}
-                        </div>
-                        <code class="text-xs text-gray-400 truncate block">{{ sp.entityId }}</code>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span class="text-xs text-gray-400">{{ sp.source }}</span>
-                        <a href="{{ path('admin_sp_show', {id: sp.id}) }}"
-                           class="text-xs text-idp-600 hover:underline">Details</a>
-                    </div>
-                </div>
-                {% endfor %}
+            <div>
+                <dt class="mb-1 text-xs text-gray-500">Entity ID</dt>
+                <dd><code class="text-xs text-gray-800">{{ tenant.entityId }}</code></dd>
             </div>
-            {% if spPagination.pageCount > 1 %}
-            <div class="px-6 py-3 border-t border-gray-100 flex justify-center">
-                <nav class="flex items-center gap-2 text-sm" aria-label="Service provider pages">
-                    {% set currentPage = spPagination.currentPageNumber %}
-                    {% if currentPage > 1 %}
-                        <a href="{{ path('admin_tenant_show', {id: tenant.id, page: currentPage - 1}) }}"
-                           class="inline-flex items-center rounded-md border border-gray-200 px-3 py-1.5 text-gray-600 hover:border-idp-300 hover:text-idp-700">
-                            Previous
-                        </a>
-                    {% else %}
-                        <span class="inline-flex items-center rounded-md border border-gray-100 px-3 py-1.5 text-gray-300 cursor-not-allowed">
-                            Previous
-                        </span>
-                    {% endif %}
+            <div>
+                <dt class="mb-1 text-xs text-gray-500">SSO Endpoint</dt>
+                <dd><code class="text-xs text-gray-800">{{ tenant.ssoUrl }}</code></dd>
+            </div>
+            <div>
+                <dt class="mb-1 text-xs text-gray-500">SLO Endpoint</dt>
+                <dd><code class="text-xs text-gray-800">{{ tenant.sloUrl }}</code></dd>
+            </div>
+        </dl>
+    </section>
 
-                    <span class="inline-flex items-center rounded-md bg-gray-50 px-3 py-1.5 text-gray-500">
-                        Page {{ currentPage }} of {{ spPagination.pageCount }}
-                    </span>
+    <!-- TENANT-SHOW-MARKER-A -->
 
-                    {% if currentPage < spPagination.pageCount %}
-                        <a href="{{ path('admin_tenant_show', {id: tenant.id, page: currentPage + 1}) }}"
-                           class="inline-flex items-center rounded-md border border-gray-200 px-3 py-1.5 text-gray-600 hover:border-idp-300 hover:text-idp-700">
-                            Next
-                        </a>
-                    {% else %}
-                        <span class="inline-flex items-center rounded-md border border-gray-100 px-3 py-1.5 text-gray-300 cursor-not-allowed">
-                            Next
-                        </span>
-                    {% endif %}
-                </nav>
+    <section class="rounded-xl border border-gray-200 bg-white p-6">
+        <h3 class="text-sm font-semibold text-gray-900">Configuration</h3>
+        <dl class="mt-4 grid gap-4 sm:grid-cols-2">
+            <div>
+                <dt class="mb-1 text-xs text-gray-500">Auth Type</dt>
+                <dd class="text-sm font-medium text-gray-900">{{ tenant.usesDatabaseAuth ? 'POSTGRESQL / MYSQL' : tenant.authType|upper }}</dd>
+            </div>
+            <div>
+                <dt class="mb-1 text-xs text-gray-500">MFA Policy</dt>
+                <dd class="text-sm font-medium capitalize text-gray-900">{{ tenant.mfaPolicy }}</dd>
+            </div>
+            <div>
+                <dt class="mb-1 text-xs text-gray-500">Organisation</dt>
+                <dd class="text-sm text-gray-700">{{ tenant.organizationName ?: '—' }}</dd>
+            </div>
+            <div>
+                <dt class="mb-1 text-xs text-gray-500">Technical Contact</dt>
+                <dd class="text-sm text-gray-700">{{ tenant.technicalContactEmail ?: '—' }}</dd>
+            </div>
+            {% if tenant.usesDatabaseAuth %}
+            <div>
+                <dt class="mb-1 text-xs text-gray-500">Local Users</dt>
+                <dd class="text-sm font-medium text-gray-900">{{ localUserCount }}</dd>
             </div>
             {% endif %}
-            {% endif %}
-        </div>
-    </div>
+            <div>
+                <dt class="mb-1 text-xs text-gray-500">eduroam</dt>
+                <dd class="text-sm text-gray-700">{{ eduroam.enabled ? eduroam.backendModeLabel : 'Disabled' }}</dd>
+            </div>
+        </dl>
+    </section>
 
-    {# ── Right column: Stats + Metadata aggregate URLs ─────── #}
-    <div class="space-y-6">
-        {# Metadata aggregate URLs #}
-        <div class="bg-white rounded-xl border border-gray-200 p-5">
-            <h3 class="text-sm font-semibold text-gray-900 mb-3">Metadata Aggregates</h3>
-            {% if tenant.metadataAggregateUrls is empty %}
-                <p class="text-xs text-gray-400">None configured. Add URLs in Edit to enable auto-refresh.</p>
-            {% else %}
-                <ul class="space-y-2">
-                    {% for url in tenant.metadataAggregateUrls %}
-                    <li class="flex items-center gap-2">
-                        <svg class="w-3.5 h-3.5 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
-                        <a href="{{ url }}" target="_blank" rel="noopener" class="text-xs text-idp-600 hover:underline truncate">{{ url }}</a>
-                    </li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
-        </div>
-
-        {# LDAP config preview (if set) #}
-        {% if tenant.authType == 'ldap' and tenant.ldapConfig %}
-        <div class="bg-white rounded-xl border border-gray-200 p-5">
-            <h3 class="text-sm font-semibold text-gray-900 mb-3">LDAP Config</h3>
-            <dl class="space-y-2 text-xs">
-                <div class="flex gap-2">
-                    <dt class="text-gray-500 w-24 flex-shrink-0">Host</dt>
-                    <dd class="text-gray-800 font-mono truncate">{{ tenant.ldapConfig.host ?? '—' }}</dd>
-                </div>
-                <div class="flex gap-2">
-                    <dt class="text-gray-500 w-24 flex-shrink-0">Base DN</dt>
-                    <dd class="text-gray-800 font-mono truncate">{{ tenant.ldapConfig.base_dn ?? '—' }}</dd>
-                </div>
-                <div class="flex gap-2">
-                    <dt class="text-gray-500 w-24 flex-shrink-0">Bind DN</dt>
-                    <dd class="text-gray-800 font-mono truncate">{{ tenant.ldapConfig.bind_dn ?? '—' }}</dd>
-                </div>
-                <div class="flex gap-2">
-                    <dt class="text-gray-500 w-24 flex-shrink-0">User attr</dt>
-                    <dd class="text-gray-800 font-mono">{{ tenant.ldapConfig.user_attr ?? 'uid' }}</dd>
-                </div>
-                <div class="flex gap-2">
-                    <dt class="text-gray-500 w-24 flex-shrink-0">StartTLS</dt>
-                    <dd class="text-gray-800">{{ tenant.ldapConfig.start_tls ?? false ? 'Yes' : 'No' }}</dd>
-                </div>
-            </dl>
-        </div>
+    <section class="rounded-xl border border-gray-200 bg-white p-6">
+        <h3 class="text-sm font-semibold text-gray-900">Metadata Aggregates</h3>
+        {% if tenant.metadataAggregateUrls is empty %}
+        <p class="mt-3 text-sm text-gray-500">None configured.</p>
+        {% else %}
+        <ul class="mt-3 space-y-2">
+            {% for url in tenant.metadataAggregateUrls %}
+            <li>
+                <a href="{{ url }}" target="_blank" rel="noopener" class="truncate text-xs text-idp-600 hover:underline">{{ url }}</a>
+            </li>
+            {% endfor %}
+        </ul>
         {% endif %}
+    </section>
 
-        {# Danger zone #}
-        {% if is_granted('ROLE_SUPER_ADMIN') %}
-        <div class="bg-white rounded-xl border border-red-200 p-5">
-            <h3 class="text-sm font-semibold text-red-700 mb-3">Danger Zone</h3>
-            <p class="text-xs text-gray-500 mb-3">These actions are irreversible.</p>
-            <form action="{{ path('admin_tenant_delete', {id: tenant.id}) }}" method="post"
-                  onsubmit="return confirm('PERMANENTLY DELETE tenant {{ tenant.name }} and all its data? Type the slug to confirm.') && (prompt('Type the slug: {{ tenant.slug }}') === '{{ tenant.slug }}')">
-                <input type="hidden" name="_token" value="{{ csrf_token('delete-' ~ tenant.id) }}">
-                <button type="submit" class="w-full px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded-lg">
-                    Delete Tenant
+    {% if tenant.publishedFederations is not empty %}
+    <section class="rounded-xl border border-gray-200 bg-white p-6">
+        <h3 class="text-sm font-semibold text-gray-900">Published Federations</h3>
+        <div class="mt-3 flex flex-wrap gap-2">
+            {% for federation in tenant.publishedFederations %}
+            <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">{{ federation }}</span>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- TENANT-SHOW-MARKER-B -->
+
+    <section class="rounded-xl border border-gray-200 bg-white p-6">
+        <h3 class="text-sm font-semibold text-gray-900">Import Service Provider</h3>
+        <p class="mt-1 text-sm text-gray-500">Add a service provider from a metadata URL or paste its XML metadata directly.</p>
+
+        <form action="{{ path('admin_tenant_import_sp', {id: tenant.id}) }}" method="post" class="mt-4 space-y-4">
+            <input type="hidden" name="_token" value="{{ csrf_token('import-sp-' ~ tenant.id) }}">
+
+            <div>
+                <label for="metadata_url" class="mb-1 block text-xs text-gray-500">Metadata URL</label>
+                <input id="metadata_url"
+                       type="url"
+                       name="metadata_url"
+                       placeholder="https://sp.example.org/Shibboleth.sso/Metadata"
+                       class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-idp-500 focus:outline-none focus:ring-2 focus:ring-idp-100">
+            </div>
+
+            <div>
+                <label for="metadata_xml" class="mb-1 block text-xs text-gray-500">Metadata XML</label>
+                <textarea id="metadata_xml"
+                          name="metadata_xml"
+                          rows="8"
+                          placeholder="Paste SP EntityDescriptor XML here if you are not importing from a URL."
+                          class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono focus:border-idp-500 focus:outline-none focus:ring-2 focus:ring-idp-100"></textarea>
+            </div>
+
+            <label class="inline-flex items-center gap-2 text-sm text-gray-600">
+                <input type="checkbox" name="approve" value="1" class="rounded border-gray-300 text-idp-600">
+                Auto-approve this service provider
+            </label>
+
+            <div>
+                <button type="submit"
+                        class="inline-flex items-center gap-2 rounded-lg bg-idp-500 px-4 py-2 text-sm font-medium text-white hover:bg-idp-600">
+                    Import SP
                 </button>
-            </form>
-        </div>
-        {% endif %}
-    </div>
+            </div>
+        </form>
+    </section>
 </div>
-
-{% endblock %}
-
-{% block scripts %}
-<script>
-function switchTab(tab) {
-    document.getElementById('pane-url').classList.toggle('hidden', tab !== 'url');
-    document.getElementById('pane-xml').classList.toggle('hidden', tab !== 'xml');
-    ['url','xml'].forEach(t => {
-        document.getElementById('tab-' + t).className = t === tab
-            ? 'px-3 py-1.5 text-xs font-medium rounded-md bg-white shadow text-gray-900'
-            : 'px-3 py-1.5 text-xs font-medium rounded-md text-gray-600 hover:text-gray-900';
-    });
-}
-
-async function validateXml() {
-    const xml = document.querySelector('[name=metadata_xml]').value.trim();
-    const el  = document.getElementById('xmlValidationResult');
-    if (!xml) { el.textContent = ''; return; }
-
-    el.textContent = 'Validating…';
-    el.className = 'ml-2 text-xs text-gray-500';
-
-    const fd = new FormData();
-    fd.append('xml', xml);
-
-    const resp = await fetch('{{ path('admin_tenant_api_validate_metadata') }}', {
-        method: 'POST',
-        body: fd,
-        headers: {'X-Requested-With': 'XMLHttpRequest'}
-    });
-    const data = await resp.json();
-
-    if (data.valid) {
-        el.textContent = '✓ Valid SAML metadata';
-        el.className = 'ml-2 text-xs text-green-600';
-    } else {
-        el.textContent = '✗ ' + (data.error ?? 'Invalid');
-        el.className = 'ml-2 text-xs text-red-600';
-    }
-}
-</script>
 {% endblock %}

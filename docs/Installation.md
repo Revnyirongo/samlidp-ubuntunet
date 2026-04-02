@@ -6,14 +6,14 @@
 - Docker Compose V2
 - PostgreSQL 16 compatible database
 - Redis
-- public DNS for the primary hostname
+- public DNS for the main hostname
 - wildcard DNS for tenant subdomains
-- TLS certificate for the deployment hostname strategy
+- TLS certificate covering the hostname strategy you will use
 
 Recommended minimum host profile:
 
-- 4 GB RAM
 - 2 vCPU
+- 4 GB RAM
 - 20 GB storage
 
 ## Hostname Model
@@ -24,24 +24,26 @@ Set a primary platform hostname such as:
 example.com
 ```
 
-Tenant IdPs are then exposed as:
+Tenant IdPs are then exposed on:
 
 ```text
 <tenant-slug>.example.com
 ```
 
-## Clone and Prepare
+## Prepare The Host
+
+Clone the repository and create the local runtime directories:
 
 ```bash
 git clone https://github.com/Revnyirongo/samlidp-ubuntunet.git
 cd samlidp-ubuntunet
 cp .env.example .env
-mkdir -p conf/credentials
+mkdir -p conf/credentials backups
 ```
 
-## Configure Environment
+## Configure The Environment
 
-Edit `.env` and provide at least:
+Edit `.env` and set at least:
 
 - `APP_SECRET`
 - `SAMLIDP_HOSTNAME`
@@ -54,21 +56,22 @@ Edit `.env` and provide at least:
 - `MAILER_FROM_ADDRESS`
 - `MAILER_FROM_NAME`
 
+If you are migrating from a previous PostgreSQL-based installation, also set:
+
+- `LEGACY_DATABASE_URL`
+
 ## Certificates
 
-Place certificate material under `conf/credentials/`.
+Place certificate files under `conf/credentials/`.
 
-The deployment expects certificate material suitable for:
-
-- the main platform hostname
-- tenant hostnames
-
-For wildcard-style deployments, provide coverage for both:
+For a wildcard deployment, provide coverage for:
 
 - `example.com`
 - `*.example.com`
 
 ## First Deployment
+
+Run:
 
 ```bash
 make deploy-first
@@ -84,25 +87,27 @@ This performs:
 
 ## Initial Sign-In
 
-After deployment:
+After deployment, sign in at:
 
 ```text
 https://example.com/login
 ```
 
-If you use the bootstrap variables from `.env`, rotate the bootstrap password immediately after first sign-in.
+Rotate the bootstrap administrator password immediately after first access.
 
-## Updating an Existing Deployment
+## Update Deployment
+
+For subsequent releases:
 
 ```bash
 make deploy-update
 ```
 
-For source-based deployments where the code is copied to the server before build, ensure the server directory contains the latest source before rebuilding.
+If your deployment copies source to the server before rebuild, make sure the server directory contains the intended release before you rebuild the containers.
 
-## Deployment Validation
+## Post-Install Validation
 
-At minimum verify:
+Run at minimum:
 
 ```bash
 curl -I https://example.com/healthz
@@ -114,4 +119,4 @@ Expected results:
 
 - health endpoint: `200`
 - login page: `200`
-- tenant metadata: `200`
+- tenant metadata endpoint: `200`

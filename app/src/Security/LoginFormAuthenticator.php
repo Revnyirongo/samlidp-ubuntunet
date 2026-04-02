@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Security;
 
 use App\Entity\User;
+use App\EventSubscriber\AdminTwoFactorSubscriber;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -59,12 +60,29 @@ class LoginFormAuthenticator extends AbstractLoginFormAuthenticator
 
     public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response
     {
-        // Record last login time
         $user = $token->getUser();
         if ($user instanceof User) {
             $user->setLastLoginAt(new \DateTimeImmutable());
             $this->em->flush();
         }
+
+        $session = $request->getSession();
+
+        if ($user instanceof User && $user->isTotpEnabled() && $user->getId() !== null) {
+            $targetPath = $this->getTargetPath($session, $firewallName);
+            if (is_string($targetPath) && $targetPath !== '') {
+                $session->set(AdminTwoFactorSubscriber::SESSION_TARGET_PATH, $targetPath);
+            }
+
+            $session->set(AdminTwoFactorSubscriber::SESSION_PENDING_USER_ID, (string) $user->getId());
+            $session->remove(AdminTwoFactorSubscriber::SESSION_VERIFIED_USER_ID);
+
+            return new RedirectResponse($this->urlGenerator->generate('app_admin_2fa_challenge'));
+        }
+
+        $session->remove(AdminTwoFactorSubscriber::SESSION_PENDING_USER_ID);
+        $session->remove(AdminTwoFactorSubscriber::SESSION_VERIFIED_USER_ID);
+        $session->remove(AdminTwoFactorSubscriber::SESSION_TARGET_PATH);
 
         if ($targetPath = $this->getTargetPath($request->getSession(), $firewallName)) {
             return new RedirectResponse($targetPath);

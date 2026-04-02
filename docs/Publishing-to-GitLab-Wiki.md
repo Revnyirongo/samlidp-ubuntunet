@@ -1,31 +1,23 @@
 # Publishing to GitLab Wiki
 
-## Recommendation
+## Recommended Model
 
-Use a split model:
+Use this split model:
 
-- keep the authoritative documentation in this repository under `docs/`
-- publish the same Markdown content to `gitlab.ubuntunet.net` for operator-facing browsing
+- keep the authoritative documentation in the repository under `docs/`
+- publish the same Markdown pages to the GitLab wiki for browsing
 
-This gives you:
+This keeps documentation versioned with the code while still giving operators a simple reading surface.
 
-- versioned documentation in Git
-- reviewable documentation changes alongside code changes
-- a clean public or internal reading surface in GitLab
+## Why Use The Wiki
 
-## Should It Be a Wiki?
+GitLab wiki works well when:
 
-Yes, a GitLab wiki is a reasonable publishing target if:
+- the audience is operators, implementers, and administrators
+- the content changes over time
+- you want page-based navigation without introducing a separate documentation stack
 
-- the audience is mostly operators, implementers, and administrators
-- the documentation will evolve continuously
-- you want simple page editing and navigation
-
-However, the wiki should not become the only source of truth. The repo should remain the canonical source so that releases and documentation stay aligned.
-
-## Recommended Structure for GitLab
-
-Publish these pages:
+## Recommended Published Pages
 
 - `Home`
 - `Architecture`
@@ -35,34 +27,19 @@ Publish these pages:
 - `Service Providers and Federations`
 - `User Lifecycle and Email`
 - `Operations`
+- `Deployment Checklist`
 - `Security and 2FA`
 - `Troubleshooting`
 
-The files in `docs/` are already organized for that structure.
+## Workflow
 
-## Suggested Workflow
-
-1. write and review documentation in this repository
-2. merge documentation changes with code changes
-3. copy or sync selected files into the GitLab wiki
+1. edit documentation in the repository
+2. review docs alongside code changes
+3. sync selected Markdown files to the GitLab wiki
 4. treat the wiki as the published reading surface
 
-## Practical Options
+## Notes
 
-### Option 1: Manual copy
-
-Low automation, simple to manage.
-
-### Option 2: Wiki repository mirror
-
-Clone the GitLab wiki repository and sync `docs/*.md` into it with a script or CI job.
-
-### Option 3: GitLab Pages
-
-If you later want stronger navigation, search, and versioned releases, consider moving from wiki pages to GitLab Pages or a static site generator.
-
-## Notes for This Repository
-
-- `docs/Home.md` can serve as the wiki landing page content
-- `docs/_Sidebar.md` can be reused as navigation content
-- keep internal runbooks or secrets out of the published wiki
+- `docs/Home.md` should be the wiki landing page
+- `docs/_Sidebar.md` can be reused for navigation
+- do not publish internal secrets, hostnames, or credentials in the wiki

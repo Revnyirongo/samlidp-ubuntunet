@@ -42,6 +42,7 @@ class ServiceProviderController extends AbstractController
         private readonly ServiceProviderRepository $spRepo,
         private readonly EntityManagerInterface    $em,
         private readonly MetadataService           $metadataService,
+        private readonly string                    $sspMetadataDir,
         private readonly AuditLogger               $audit,
         private readonly PaginatorInterface        $paginator,
         private readonly LoggerInterface           $logger,
@@ -87,6 +88,7 @@ class ServiceProviderController extends AbstractController
         );
 
         $this->addFlash('success', sprintf('"%s" approved and added to SSP config.', $sp->getDisplayName()));
+        $this->addPublicationFlash($sp);
         return $this->redirectToRoute('admin_tenant_show', ['id' => $sp->getTenant()->getId()]);
     }
 
@@ -231,6 +233,7 @@ class ServiceProviderController extends AbstractController
                 $this->em->flush();
                 $this->metadataService->regenerateConfigForTenant($sp->getTenant());
                 $this->addFlash('success', 'SP updated and config regenerated.');
+                $this->addPublicationFlash($sp);
                 return $this->redirectToRoute('admin_sp_show', ['id' => $sp->getId()]);
             } catch (\Throwable $e) {
                 $this->addFlash('danger', 'Save failed: ' . $e->getMessage());
@@ -246,6 +249,62 @@ class ServiceProviderController extends AbstractController
             'effectiveRelease'     => $effectiveRelease,
             'tenantDefaultRelease' => $tenantDefaultRelease,
         ]);
+    }
+
+    private function addPublicationFlash(ServiceProvider $serviceProvider): void
+    {
+        $status = $this->getServiceProviderPublicationStatus($serviceProvider);
+        $this->addFlash($status['published'] ? 'info' : 'warning', $status['message']);
+    }
+
+    /**
+     * @return array{published: bool, message: string}
+     */
+    private function getServiceProviderPublicationStatus(ServiceProvider $serviceProvider): array
+    {
+        if (!$serviceProvider->isApproved()) {
+            return [
+                'published' => false,
+                'message' => 'The SP is saved but not approved, so it is not expected in the live runtime metadata.',
+            ];
+        }
+
+        $entityId = trim($serviceProvider->getEntityId());
+        if ($entityId === '') {
+            return [
+                'published' => false,
+                'message' => 'The SP is missing an entity ID, so runtime publication could not be verified.',
+            ];
+        }
+
+        $metadataPath = $this->sspMetadataDir . '/saml20-sp-remote.php';
+        if (!is_file($metadataPath) || !is_readable($metadataPath)) {
+            return [
+                'published' => false,
+                'message' => 'The SimpleSAMLphp runtime metadata file is not available yet. Regenerate config and restart the runtime if needed.',
+            ];
+        }
+
+        $contents = @file_get_contents($metadataPath);
+        if (!is_string($contents)) {
+            return [
+                'published' => false,
+                'message' => 'The SimpleSAMLphp runtime metadata file could not be read for verification.',
+            ];
+        }
+
+        $needle = "\$metadata['" . addslashes($entityId) . "']";
+        if (str_contains($contents, $needle)) {
+            return [
+                'published' => true,
+                'message' => 'Runtime publication verified in the generated SimpleSAMLphp metadata.',
+            ];
+        }
+
+        return [
+            'published' => false,
+            'message' => 'The SP was saved, but runtime publication could not be confirmed in the generated SimpleSAMLphp metadata. Regenerate config or restart the runtime containers.',
+        ];
     }
 
     // ── Global SP search (super admin) ───────────────────────

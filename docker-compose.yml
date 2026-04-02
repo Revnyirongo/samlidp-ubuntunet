@@ -113,6 +113,7 @@ services:
       SSP_ADMIN_PASSWORD_HASH: ${SSP_ADMIN_PASSWORD_HASH}
       SSP_SECRET_SALT: ${SSP_SECRET_SALT}
     volumes:
+      - ./docker/php/php-ssp.ini:/usr/local/etc/php/conf.d/99-ssp.ini:ro
       - simplesamlphp_config:/var/simplesamlphp/vendor/simplesamlphp/simplesamlphp/config
       - simplesamlphp_metadata:/var/simplesamlphp/vendor/simplesamlphp/simplesamlphp/metadata
       - simplesamlphp_cert:/var/simplesamlphp/vendor/simplesamlphp/simplesamlphp/cert

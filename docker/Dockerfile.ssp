@@ -44,6 +44,9 @@ RUN composer require simplesamlphp/simplesamlphp:^${SSP_VERSION} \
     simplesamlphp/simplesamlphp-module-statistics:^1.3 \
     --update-no-dev --prefer-dist --optimize-autoloader --no-interaction
 
+# Apply production PHP settings for the SSP runtime.
+COPY docker/php/php-ssp.ini /usr/local/etc/php/conf.d/99-ssp.ini
+
 # Copy our custom UbuntuNet module into the SimpleSAMLphp install tree.
 COPY simplesamlphp/modules/ /var/simplesamlphp/vendor/simplesamlphp/simplesamlphp/modules/
 

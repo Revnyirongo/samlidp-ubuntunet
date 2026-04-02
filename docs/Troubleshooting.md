@@ -1,8 +1,8 @@
 # Troubleshooting
 
-## Health and Reachability
+## Start With Reachability
 
-Start with:
+Run:
 
 ```bash
 curl -I https://example.com/healthz
@@ -18,8 +18,8 @@ Typical causes:
 
 - `app` container unavailable
 - `simplesamlphp` container unavailable
-- nginx using stale or invalid upstream resolution
-- container recreation without proxy reload
+- proxy upstream resolution failure
+- container recreation without proxy refresh
 
 Check:
 
@@ -50,13 +50,13 @@ docker compose exec -T -u 1000:1000 app php bin/console cache:warmup
 
 ### `Metadata not found`
 
-This usually means the SP does not exist in the active generated remote metadata.
+This usually means the SP does not exist in active generated runtime metadata.
 
 Verify:
 
-1. SP record exists in the application database
-2. SP is approved
-3. SP has a valid ACS URL
+1. the SP exists in the application database
+2. the SP is approved
+3. the SP has a valid ACS URL
 4. metadata refresh completed successfully
 5. runtime configuration was regenerated
 
@@ -74,10 +74,10 @@ Check:
 Check:
 
 - `MAILER_DSN`
-- sender address/domain
+- sender address and domain
 - SMTP authentication
 - outbound network reachability
-- provider logs
+- mail provider logs
 
 Test:
 
@@ -93,7 +93,7 @@ Common causes:
 - missing or malformed SP logout endpoint
 - reverse proxy base URL mismatch
 
-Always reproduce with a fresh login/logout cycle before treating a stale logout URL as a current defect.
+Always reproduce with a fresh login and logout cycle before treating an old logout URL as a current defect.
 
 ## Logs
 
@@ -102,14 +102,14 @@ Useful sources:
 - `docker compose logs app`
 - `docker compose logs nginx`
 - `docker compose logs simplesamlphp`
-- Symfony application logs inside the app container
+- Symfony logs inside the app container
 - SimpleSAMLphp logs inside the runtime container
 
 ## Request IDs
 
-Where available, use request IDs to correlate:
+Where request IDs are available, use them to correlate:
 
-- browser-visible error page
+- the browser-visible error page
 - reverse proxy logs
 - application logs
 - SimpleSAMLphp logs
@@ -117,8 +117,8 @@ Where available, use request IDs to correlate:
 ## Recommended Triage Sequence
 
 1. reproduce the issue in a fresh browser session
-2. identify whether the problem is platform, tenant, or SP-specific
+2. decide whether the issue is platform, tenant, or SP-specific
 3. validate health and metadata endpoints
 4. inspect logs
-5. regenerate runtime config if metadata-related
+5. regenerate runtime configuration if metadata-related
 6. clear cache if application behavior looks stale

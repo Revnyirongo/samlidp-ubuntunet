@@ -48,6 +48,12 @@ class IdpUser
     #[ORM\Column(length: 64, nullable: true)]
     private ?string $ntPasswordHash = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $totpSecret = null;
+
+    #[ORM\Column]
+    private bool $totpEnabled = false;
+
     /**
      * SAML attributes to release for this user.
      * JSON: { "mail": ["user@example.org"], "cn": ["Full Name"], ... }
@@ -91,6 +97,10 @@ class IdpUser
     public function setLegacySalt(?string $salt): static { $this->legacySalt = $salt; return $this; }
     public function getNtPasswordHash(): ?string { return $this->ntPasswordHash; }
     public function setNtPasswordHash(?string $hash): static { $this->ntPasswordHash = $hash; return $this; }
+    public function getTotpSecret(): ?string { return $this->totpSecret; }
+    public function setTotpSecret(?string $secret): static { $this->totpSecret = $secret; return $this; }
+    public function isTotpEnabled(): bool { return $this->totpEnabled; }
+    public function setTotpEnabled(bool $enabled): static { $this->totpEnabled = $enabled; return $this; }
     public function getAttributes(): array { return $this->attributes; }
     public function setAttributes(array $a): static { $this->attributes = $a; return $this; }
     public function getEmail(): ?string { return $this->attributeFirstValue('mail'); }

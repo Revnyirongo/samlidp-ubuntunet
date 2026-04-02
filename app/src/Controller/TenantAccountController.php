@@ -14,6 +14,9 @@ use App\Service\IdpUserActionTokenService;
 use App\Service\IdpUserPasswordManager;
 use App\Service\MailerStatus;
 use App\Service\NotificationMailer;
+use App\Service\PublicFormProtection;
+use App\Service\TenantLocalCredentialService;
+use App\Service\TotpService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -34,6 +37,9 @@ class TenantAccountController extends AbstractController
         private readonly MailerStatus $mailerStatus,
         private readonly EntityManagerInterface $em,
         private readonly ValidatorInterface $validator,
+        private readonly PublicFormProtection $formProtection,
+        private readonly TenantLocalCredentialService $tenantLocalCredentialService,
+        private readonly TotpService $totpService,
     ) {}
 
     #[Route('/tenant/{slug}/register', name: 'app_tenant_register', methods: ['GET', 'POST'])]
@@ -63,8 +69,15 @@ class TenantAccountController extends AbstractController
             $username = trim((string) ($data['username'] ?? ''));
             $email = strtolower(trim((string) ($data['email'] ?? '')));
             $fullName = trim((string) ($data['fullName'] ?? ''));
+            $formError = $this->formProtection->validateSubmission(
+                $request,
+                PublicFormProtection::TENANT_REGISTER,
+                $tenant->getSlug()
+            );
 
-            if ($fullName === '' || $username === '' || $email === '') {
+            if ($formError !== null) {
+                $this->addFlash('danger', $formError);
+            } elseif ($fullName === '' || $username === '' || $email === '') {
                 $this->addFlash('danger', 'Full name, username, and email are required.');
             } elseif ($this->idpUserRepo->findByTenantAndUsername($tenant, $username) !== null) {
                 $this->addFlash('warning', 'That username is already in use for this tenant.');
@@ -123,6 +136,7 @@ class TenantAccountController extends AbstractController
         return $this->render('security/tenant_register.html.twig', [
             'tenant' => $tenant,
             'formData' => $data,
+            'form_challenge' => $this->formProtection->issueChallenge($request, PublicFormProtection::TENANT_REGISTER),
             'submitted' => $request->query->getBoolean('submitted'),
             'mailer_enabled' => $this->mailerStatus->isEnabled(),
             'auth_brand_logo' => $tenant->getLogoUrl(),
@@ -143,36 +157,46 @@ class TenantAccountController extends AbstractController
                 throw $this->createAccessDeniedException('Invalid CSRF token.');
             }
 
-            $email = strtolower(trim($request->request->getString('email')));
-            $user = $this->idpUserRepo->findByTenantAndEmail($tenant, $email);
+            $formError = $this->formProtection->validateSubmission(
+                $request,
+                PublicFormProtection::TENANT_FORGOT_PASSWORD,
+                $tenant->getSlug()
+            );
+            if ($formError !== null) {
+                $this->addFlash('danger', $formError);
+            } else {
+                $email = strtolower(trim($request->request->getString('email')));
+                $user = $this->idpUserRepo->findByTenantAndEmail($tenant, $email);
 
-            if ($user instanceof IdpUser && $user->isActive() && $user->getEmail() !== null) {
-                $mailFailed = false;
-                try {
-                    $rawToken = $this->tokenService->issue($user, IdpUserActionToken::PURPOSE_PASSWORD_RESET);
-                    $this->mailer->sendTenantUserPasswordReset($user, $rawToken);
-                } catch (\Throwable) {
-                    $mailFailed = true;
+                if ($user instanceof IdpUser && $user->isActive() && $user->getEmail() !== null) {
+                    $mailFailed = false;
+                    try {
+                        $rawToken = $this->tokenService->issue($user, IdpUserActionToken::PURPOSE_PASSWORD_RESET);
+                        $this->mailer->sendTenantUserPasswordReset($user, $rawToken);
+                    } catch (\Throwable) {
+                        $mailFailed = true;
+                    }
+                } else {
+                    $mailFailed = false;
                 }
-            } else {
-                $mailFailed = false;
-            }
 
-            if (!$this->mailerStatus->isEnabled()) {
-                $this->addFlash('warning', 'Reset request accepted. Email delivery is currently unavailable.');
-            } elseif ($mailFailed) {
-                $this->addFlash('warning', 'Reset request accepted, but the email could not be delivered.');
-            } else {
-                $this->addFlash('success', 'If that account exists, a reset link has been sent.');
+                if (!$this->mailerStatus->isEnabled()) {
+                    $this->addFlash('warning', 'Reset request accepted. Email delivery is currently unavailable.');
+                } elseif ($mailFailed) {
+                    $this->addFlash('warning', 'Reset request accepted, but the email could not be delivered.');
+                } else {
+                    $this->addFlash('success', 'If that account exists, a reset link has been sent.');
+                }
+                return $this->redirectToRoute('app_tenant_forgot_password', [
+                    'slug' => $tenant->getSlug(),
+                    'sent' => 1,
+                ]);
             }
-            return $this->redirectToRoute('app_tenant_forgot_password', [
-                'slug' => $tenant->getSlug(),
-                'sent' => 1,
-            ]);
         }
 
         return $this->render('security/tenant_forgot_password.html.twig', [
             'tenant' => $tenant,
+            'form_challenge' => $this->formProtection->issueChallenge($request, PublicFormProtection::TENANT_FORGOT_PASSWORD),
             'sent' => $request->query->getBoolean('sent'),
             'updated' => $request->query->getBoolean('updated'),
             'mailer_enabled' => $this->mailerStatus->isEnabled(),
@@ -240,6 +264,102 @@ class TenantAccountController extends AbstractController
             'token' => $token,
             'mode' => $actionToken->getPurpose() === IdpUserActionToken::PURPOSE_SET_PASSWORD ? 'set' : 'reset',
             'mailer_enabled' => $this->mailerStatus->isEnabled(),
+            'auth_brand_logo' => $tenant->getLogoUrl(),
+            'auth_brand_name' => $tenant->getName(),
+        ]);
+    }
+
+    #[Route('/tenant/{slug}/mfa/setup', name: 'app_tenant_mfa_setup', methods: ['GET', 'POST'])]
+    public function setupMfa(string $slug, Request $request): Response
+    {
+        $tenant = $this->tenantRepo->findActiveBySlug($slug);
+        if ($tenant === null || !$tenant->usesDatabaseAuth()) {
+            throw $this->createNotFoundException('Tenant not found.');
+        }
+
+        $sessionKey = 'tenant_mfa_setup_' . $tenant->getSlug();
+        $session = $request->getSession();
+        $pending = $session->get($sessionKey);
+
+        if (!is_array($pending)) {
+            $pending = null;
+        }
+
+        $formData = [
+            'identifier' => '',
+            'password' => '',
+        ];
+
+        if ($request->isMethod('POST')) {
+            $stage = $request->request->getString('stage', $pending === null ? 'identify' : 'confirm');
+
+            if ($stage === 'identify') {
+                if (!$this->isCsrfTokenValid('tenant_mfa_setup_identify_' . $tenant->getSlug(), $request->request->getString('_token'))) {
+                    throw $this->createAccessDeniedException('Invalid CSRF token.');
+                }
+
+                $formData['identifier'] = trim($request->request->getString('identifier'));
+                $formData['password'] = $request->request->getString('password');
+                $user = $this->tenantLocalCredentialService->findByIdentifier($tenant, $formData['identifier']);
+
+                if (!$user instanceof IdpUser || !$user->isActive() || !$this->tenantLocalCredentialService->verifyPassword($user, $formData['password'])) {
+                    $this->addFlash('danger', 'The supplied username/email and password were not accepted.');
+                } elseif ($user->isTotpEnabled()) {
+                    $this->addFlash('info', 'An authenticator app is already configured for this account.');
+                    return $this->redirectToRoute('app_tenant_continue_to_login', ['slug' => $tenant->getSlug()]);
+                } else {
+                    $secret = $this->totpService->generateSecret();
+                    $pending = [
+                        'user_id' => (string) $user->getId(),
+                        'identifier' => $formData['identifier'],
+                        'secret' => $secret,
+                    ];
+                    $session->set($sessionKey, $pending);
+
+                    return $this->redirectToRoute('app_tenant_mfa_setup', ['slug' => $tenant->getSlug()]);
+                }
+            }
+
+            if ($stage === 'confirm') {
+                if (!$this->isCsrfTokenValid('tenant_mfa_setup_confirm_' . $tenant->getSlug(), $request->request->getString('_token'))) {
+                    throw $this->createAccessDeniedException('Invalid CSRF token.');
+                }
+
+                if ($pending === null) {
+                    $this->addFlash('warning', 'Start the authenticator setup again.');
+                    return $this->redirectToRoute('app_tenant_mfa_setup', ['slug' => $tenant->getSlug()]);
+                }
+
+                $code = $request->request->getString('code');
+                if (!$this->totpService->verifyCode((string) ($pending['secret'] ?? ''), $code)) {
+                    $this->addFlash('danger', 'The verification code was not accepted.');
+                } else {
+                    $user = $this->idpUserRepo->find($pending['user_id'] ?? null);
+                    if (!$user instanceof IdpUser || $user->getTenant()?->getId() != $tenant->getId()) {
+                        $session->remove($sessionKey);
+                        $this->addFlash('danger', 'The authenticator setup session has expired.');
+                        return $this->redirectToRoute('app_tenant_mfa_setup', ['slug' => $tenant->getSlug()]);
+                    }
+
+                    $user->setTotpSecret((string) $pending['secret']);
+                    $user->setTotpEnabled(true);
+                    $this->em->flush();
+                    $session->remove($sessionKey);
+
+                    $this->addFlash('success', 'Authenticator-based sign-in verification is now enabled for your account.');
+
+                    return $this->redirectToRoute('app_tenant_continue_to_login', ['slug' => $tenant->getSlug()]);
+                }
+            }
+        }
+
+        return $this->render('security/tenant_mfa_setup.html.twig', [
+            'tenant' => $tenant,
+            'pending_setup' => $pending,
+            'setup_uri' => is_array($pending)
+                ? $this->totpService->getProvisioningUri((string) ($pending['identifier'] ?? $tenant->getSlug()), (string) $pending['secret'], $tenant->getName())
+                : null,
+            'formData' => $formData,
             'auth_brand_logo' => $tenant->getLogoUrl(),
             'auth_brand_name' => $tenant->getName(),
         ]);

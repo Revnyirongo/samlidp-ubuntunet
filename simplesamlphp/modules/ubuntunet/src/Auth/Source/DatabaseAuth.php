@@ -16,6 +16,7 @@ class DatabaseAuth extends Source
 {
     private string $tenantSlug;
     private ?PDO $pdo = null;
+    private ?array $lastLoginContext = null;
 
     public function __construct(array $info, array $config)
     {
@@ -49,6 +50,7 @@ class DatabaseAuth extends Source
      */
     public function login(string $username, string $password): array
     {
+        $this->lastLoginContext = null;
         $pdo = $this->getPdo();
         $row = $this->findUserRow($pdo, $username);
 
@@ -108,12 +110,33 @@ class DatabaseAuth extends Source
             $attrs['urn:oid:1.3.6.1.4.1.5923.1.1.1.6'] = $attrs['eduPersonPrincipalName'];
         }
 
+        $displayIdentifier = trim((string) ($attrs['mail'][0] ?? $attrs['eduPersonPrincipalName'][0] ?? $username));
+        $requiresTotp = (bool) ($row['totp_enabled'] ?? false);
+        $mustSetupTotp = !$requiresTotp && (($row['mfa_policy'] ?? 'none') === 'required');
+        $this->lastLoginContext = [
+            'user_id' => (string) ($row['id'] ?? ''),
+            'username' => (string) ($row['username'] ?? $username),
+            'display_identifier' => $displayIdentifier !== '' ? $displayIdentifier : $username,
+            'totp_secret' => is_string($row['totp_secret'] ?? null) ? $row['totp_secret'] : null,
+            'totp_enabled' => $requiresTotp,
+            'requires_totp' => $requiresTotp,
+            'must_setup_totp' => $mustSetupTotp,
+            'mfa_policy' => (string) ($row['mfa_policy'] ?? 'none'),
+            'tenant_slug' => $this->tenantSlug,
+            'tenant_name' => (string) ($row['tenant_name'] ?? $this->tenantSlug),
+        ];
+
         return $attrs;
     }
 
     public function getTenantSlug(): string
     {
         return $this->tenantSlug;
+    }
+
+    public function getLastLoginContext(): ?array
+    {
+        return $this->lastLoginContext;
     }
 
     private function getPdo(): PDO
@@ -183,7 +206,8 @@ class DatabaseAuth extends Source
     private function findUserRow(PDO $pdo, string $identifier): array|false
     {
         $stmt = $pdo->prepare(<<<SQL
-            SELECT u.id, u.username, u.password, u.legacy_salt, u.nt_password_hash, u.attributes, u.is_active
+            SELECT u.id, u.username, u.password, u.legacy_salt, u.nt_password_hash, u.attributes, u.is_active,
+                   u.totp_secret, u.totp_enabled, t.mfa_policy, t.name AS tenant_name
             FROM idp_users u
             JOIN tenants t ON t.id = u.tenant_id
             WHERE t.slug = :slug
@@ -207,7 +231,8 @@ class DatabaseAuth extends Source
         }
 
         $fallbackStmt = $pdo->prepare(<<<SQL
-            SELECT u.id, u.username, u.password, u.legacy_salt, u.nt_password_hash, u.attributes, u.is_active
+            SELECT u.id, u.username, u.password, u.legacy_salt, u.nt_password_hash, u.attributes, u.is_active,
+                   u.totp_secret, u.totp_enabled, t.mfa_policy, t.name AS tenant_name
             FROM idp_users u
             JOIN tenants t ON t.id = u.tenant_id
             WHERE t.slug = :slug

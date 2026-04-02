@@ -6,6 +6,11 @@
 {% block auth_content %}
 <form method="post" class="space-y-5">
     <input type="hidden" name="_token" value="{{ csrf_token('self_register') }}">
+    <input type="hidden" name="_challenge" value="{{ form_challenge }}">
+    <div class="hidden" aria-hidden="true">
+        <label for="company">Company</label>
+        <input id="company" name="company" type="text" tabindex="-1" autocomplete="off">
+    </div>
     <div>
         <label for="fullName" class="mb-1.5 block text-sm font-semibold text-slate-700">Full name</label>
         <input id="fullName" name="registration[fullName]" type="text" required value="{{ formData.fullName }}"
@@ -41,6 +46,7 @@
             class="w-full rounded-2xl bg-idp-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-idp-500">
         Submit request
     </button>
+    <p class="text-center text-xs text-slate-400">Protected by automated abuse controls.</p>
     <div class="text-center text-sm text-slate-500">
         <a href="{{ path('app_login') }}" class="font-semibold text-idp-600 hover:underline">Back to sign in</a>
     </div>

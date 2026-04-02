@@ -8,21 +8,22 @@ Create tenants from:
 https://example.com/admin/tenants/new
 ```
 
-Core tenant fields include:
+Key tenant fields include:
 
 - institution name
 - slug
 - organisation name and URL
-- technical contact
+- technical contact details
 - branding
 - authentication backend
-- federation metadata profile fields
+- metadata profile values
 - attribute release defaults
-- optional eduroam-related configuration fields
+- federation publication settings
+- optional eduroam-related guidance fields
 
 ## Tenant Hostname and Entity ID
 
-Given slug `tenant-a` and platform hostname `example.com`:
+For a tenant with slug `tenant-a` on `example.com`:
 
 - tenant base URL: `https://tenant-a.example.com`
 - metadata URL: `https://tenant-a.example.com/saml2/idp/metadata.php`
@@ -33,23 +34,27 @@ Given slug `tenant-a` and platform hostname `example.com`:
 Tenant branding supports:
 
 - uploaded logo
-- hosted logo URL
-- tenant display name on the SAML login flow
+- externally hosted logo URL
+- tenant display name on tenant-facing login pages
 
-Tenant branding is used on tenant-specific account and SAML authentication screens.
+Tenant branding appears on:
+
+- tenant SAML sign-in pages
+- tenant account workflows
+- tenant metadata-related operator views
 
 ## Authentication Backend Selection
 
 ### Database
 
-Use this when the platform will manage user accounts directly for the tenant.
+Use this when the platform will manage user accounts directly.
 
-This enables:
+Enabled features:
 
 - local users
 - invitations
 - password resets
-- tenant self-registration requests
+- self-service registration requests
 - bulk import
 
 ### LDAP / AD
@@ -58,15 +63,21 @@ Use this when the tenant already has an LDAP or Active Directory source.
 
 ### SAML Proxy
 
-Use this when the tenant delegates authentication to another SAML IdP.
+Use this when the tenant authenticates against an upstream SAML identity source.
 
 ### RADIUS
 
-Use this when the tenant authentication model is external RADIUS-based.
+Use this when the tenant authentication model is external RADIUS.
 
 ## Tenant Administrator Scope
 
-Tenant administrators are intended to manage only their assigned tenants and associated data. Super administrators manage the full installation.
+Tenant administrators are intended to manage only:
+
+- tenants assigned to them
+- tenant-local users inside those tenants
+- SPs and federation settings attached to those tenants
+
+Super administrators manage the full installation.
 
 ## Tenant User Management
 
@@ -87,7 +98,7 @@ Available actions:
 
 ## Tenant Registration Requests
 
-Database-backed tenants can accept self-service registration requests through:
+Database-backed tenants can accept self-service registration requests at:
 
 ```text
 https://<tenant-slug>.example.com/tenant/<tenant-slug>/register
@@ -107,21 +118,19 @@ Database-backed tenants can use:
 https://<tenant-slug>.example.com/tenant/<tenant-slug>/forgot-password
 ```
 
-After password reset, the user is directed back into the tenant login flow through the tenant-specific continuation path.
+After password reset, the user is directed back into the tenant login flow.
 
-## Tenant Metadata and Configuration Actions
+## Tenant Configuration Actions
 
-Tenant-level actions available in the admin UI include:
+Tenant-level actions include:
 
 - import SP metadata
 - refresh metadata
-- regenerate config
+- regenerate runtime configuration
 - regenerate keypair
 - activate
 - suspend
 
-## Eduroam Configuration
+## Eduroam Guidance
 
-The current platform provides authentication-oriented guidance for managed local-user tenants. It does not replace external switchboard or national roaming infrastructure.
-
-Use the eduroam-related fields only where the tenant needs local authentication-side configuration guidance.
+The platform provides authentication-side guidance for managed local-user tenants. It does not replace external roaming, switchboard, or national proxy infrastructure.

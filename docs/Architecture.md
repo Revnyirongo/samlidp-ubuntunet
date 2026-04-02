@@ -1,26 +1,27 @@
 # Architecture
 
-## Core Components
+## Overview
 
-- `app`: Symfony application for administration, APIs, background tasks, and configuration generation
+The platform is split into two main layers:
+
+- a Symfony application for administration, APIs, data management, and config generation
+- a SimpleSAMLphp runtime for tenant-facing SAML IdP endpoints
+
+Nginx sits in front of both layers and routes requests based on host and path.
+
+## Core Services
+
+- `app`: administration UI, API endpoints, metadata normalization, configuration generation
 - `simplesamlphp`: SAML IdP runtime
-- `nginx`: public TLS entry point and tenant-aware reverse proxy
+- `nginx`: TLS termination and tenant-aware reverse proxy
 - `db`: PostgreSQL application database
-- `redis`: queue, cache, and coordination store
-- `worker`: asynchronous/background task worker
-- `scheduler`: scheduled job runner
-
-## Runtime Model
-
-The platform separates administration and SAML runtime responsibilities:
-
-- Symfony manages tenants, service providers, branding, user lifecycle, federation metadata, and generated configuration
-- SimpleSAMLphp serves tenant SAML endpoints and performs authentication
-- Nginx routes requests between the platform and the tenant SAML runtime based on path and host
+- `redis`: cache, locks, queue coordination
+- `worker`: asynchronous tasks
+- `scheduler`: scheduled jobs such as metadata refresh and certificate checks
 
 ## Tenant Model
 
-Each tenant is represented as a distinct identity provider under its own hostname:
+Each tenant is represented as an individual IdP under its own hostname:
 
 ```text
 https://<tenant-slug>.example.com
@@ -28,76 +29,63 @@ https://<tenant-slug>.example.com
 
 Each tenant has:
 
-- a unique slug
-- SAML entity ID and endpoint set
-- branding and metadata profile fields
-- an authentication backend type
-- optional administrators assigned to manage it
-- optional publication rules for federation exports
+- its own entity ID and SAML endpoints
+- a chosen authentication backend
+- tenant branding and metadata profile values
+- optional tenant-local administrators
+- service provider relationships
+- federation publication settings
 
-## Supported Authentication Models
+## Authentication Backends
 
-- `database`: tenant-local managed user store
+The platform supports these tenant authentication models:
+
+- `database`: managed tenant-local users
 - `ldap`: external LDAP or Active Directory
-- `saml`: upstream SAML IdP proxy model
-- `radius`: external RADIUS integration
+- `saml`: upstream SAML identity source
+- `radius`: external RADIUS-backed authentication
 
-## Metadata Flow
+## Metadata Model
 
 ### Hosted tenant metadata
 
-Tenant metadata is generated from tenant configuration and exposed through:
-
-```text
-https://<tenant-slug>.example.com/saml2/idp/metadata.php
-```
+Tenant hosted metadata is generated from tenant configuration and served by the SAML runtime.
 
 ### Service provider metadata
 
-SP metadata can come from:
+SP metadata can enter the platform from:
 
-- direct import by metadata URL
-- direct import by XML paste/upload
+- metadata URL import
+- XML upload or paste
 - tenant federation aggregate refresh
 
-Imported SP metadata is normalized before being written into the generated SimpleSAMLphp remote metadata.
+Imported metadata is normalized before it is written into the generated SimpleSAMLphp remote metadata.
 
 ### Federation publication
 
-The platform exposes:
+The platform can publish:
 
 - full federation aggregate metadata
 - federation-filtered metadata
 - tenant metadata API views
 
-## Data Ownership and Access Control
+## Access Control
 
-- super administrators can manage all tenants and platform-wide settings
-- tenant administrators are expected to manage only tenants assigned to them
-- tenant-local users exist only inside the tenant-local authentication model
+- super administrators can manage the full installation
+- tenant administrators are limited to their assigned tenants and related data
+- tenant-local users only exist inside database-backed tenants
 
 ## Branding Model
 
-There are two branding layers:
+The software uses two layers of branding:
 
-- platform branding for the main site and admin surface
-- tenant branding for SAML login experiences and tenant-specific workflows
+- platform branding for the main site and administration surfaces
+- tenant branding for tenant login pages, tenant account flows, and tenant metadata UI fields
 
-## Background Jobs
+## Runtime Flow
 
-Background and scheduled tasks handle:
-
-- federation metadata refresh
-- tenant configuration regeneration
-- certificate checks
-- deferred notifications or asynchronous work
-
-## Deployment Pattern
-
-The standard deployment pattern is:
-
-1. wildcard DNS for tenant hosts
-2. TLS certificate covering the main host and tenant hosts
-3. Docker Compose deployment
-4. PostgreSQL and Redis as local or external services
-5. scheduled refresh of metadata and generated configuration
+1. The operator creates or updates a tenant in the Symfony application.
+2. The application persists tenant, SP, and federation configuration in PostgreSQL.
+3. Configuration generation writes SimpleSAMLphp runtime metadata and tenant configuration.
+4. Nginx routes tenant SAML traffic to the runtime.
+5. The runtime authenticates users according to the tenant backend and releases attributes to approved SPs.

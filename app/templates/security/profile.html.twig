@@ -17,6 +17,15 @@
             <dt class="font-medium text-gray-500">Roles</dt>
             <dd class="text-gray-900">{{ user.roles|join(', ') }}</dd>
         </div>
+        <div>
+            <dt class="font-medium text-gray-500">Two-factor sign-in</dt>
+            <dd class="text-gray-900">
+                {{ user.totpEnabled ? 'Enabled' : 'Not enabled' }}
+                <a href="{{ path('app_profile_mfa') }}" class="ml-3 font-semibold text-idp-600 hover:underline">
+                    Manage
+                </a>
+            </dd>
+        </div>
     </dl>
 </div>
 {% endblock %}

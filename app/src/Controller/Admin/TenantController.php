@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
-use App\Entity\Tenant;
 use App\Entity\ServiceProvider;
+use App\Entity\Tenant;
+use App\Repository\IdpUserRepository;
 use App\Repository\TenantRepository;
 use App\Repository\ServiceProviderRepository;
 use App\Service\EduroamConfigBuilder;
@@ -30,8 +31,10 @@ class TenantController extends AbstractController
     public function __construct(
         private readonly TenantRepository          $tenantRepo,
         private readonly ServiceProviderRepository $spRepo,
+        private readonly IdpUserRepository         $idpUserRepo,
         private readonly EntityManagerInterface    $em,
         private readonly MetadataService           $metadataService,
+        private readonly string                    $sspMetadataDir,
         private readonly EduroamConfigBuilder      $eduroamConfigBuilder,
         private readonly TenantProvisioner         $provisioner,
         private readonly PaginatorInterface        $paginator,
@@ -138,18 +141,10 @@ class TenantController extends AbstractController
     {
         $this->denyAccessUnlessGranted('TENANT_VIEW', $tenant);
 
-        $spPagination = $this->paginator->paginate(
-            $this->spRepo->createQueryBuilder('sp')
-                ->where('sp.tenant = :t')->setParameter('t', $tenant)
-                ->orderBy('sp.name', 'ASC'),
-            $request->query->getInt('page', 1),
-            20
-        );
-
         return $this->render('admin/tenant/show.html.twig', [
-            'tenant'       => $tenant,
-            'eduroam'      => $this->eduroamConfigBuilder->build($tenant),
-            'spPagination' => $spPagination,
+            'tenant' => $tenant,
+            'eduroam' => $this->eduroamConfigBuilder->build($tenant),
+            'localUserCount' => $tenant->usesDatabaseAuth() ? $this->idpUserRepo->countByTenant($tenant) : null,
         ]);
     }
 
@@ -252,6 +247,7 @@ class TenantController extends AbstractController
                 'SP "%s" imported successfully.',
                 $sp->getDisplayName()
             ));
+            $this->addPublicationFlash($sp);
             if ($sp->getRequestedAttributes() !== null && $sp->getRequestedAttributes() !== []) {
                 $this->addFlash('info', 'Review the requested attributes and choose what this SP may receive.');
             }
@@ -311,6 +307,62 @@ class TenantController extends AbstractController
         }
 
         return $this->redirectToRoute('admin_tenant_show', ['id' => $tenant->getId()]);
+    }
+
+    private function addPublicationFlash(ServiceProvider $serviceProvider): void
+    {
+        $status = $this->getServiceProviderPublicationStatus($serviceProvider);
+        $this->addFlash($status['published'] ? 'info' : 'warning', $status['message']);
+    }
+
+    /**
+     * @return array{published: bool, message: string}
+     */
+    private function getServiceProviderPublicationStatus(ServiceProvider $serviceProvider): array
+    {
+        if (!$serviceProvider->isApproved()) {
+            return [
+                'published' => false,
+                'message' => 'The SP is saved but not approved, so it is not expected in the live runtime metadata.',
+            ];
+        }
+
+        $entityId = trim($serviceProvider->getEntityId());
+        if ($entityId === '') {
+            return [
+                'published' => false,
+                'message' => 'The SP is missing an entity ID, so runtime publication could not be verified.',
+            ];
+        }
+
+        $metadataPath = $this->sspMetadataDir . '/saml20-sp-remote.php';
+        if (!is_file($metadataPath) || !is_readable($metadataPath)) {
+            return [
+                'published' => false,
+                'message' => 'The SimpleSAMLphp runtime metadata file is not available yet. Regenerate config and restart the runtime if needed.',
+            ];
+        }
+
+        $contents = @file_get_contents($metadataPath);
+        if (!is_string($contents)) {
+            return [
+                'published' => false,
+                'message' => 'The SimpleSAMLphp runtime metadata file could not be read for verification.',
+            ];
+        }
+
+        $needle = "\$metadata['" . addslashes($entityId) . "']";
+        if (str_contains($contents, $needle)) {
+            return [
+                'published' => true,
+                'message' => 'Runtime publication verified in the generated SimpleSAMLphp metadata.',
+            ];
+        }
+
+        return [
+            'published' => false,
+            'message' => 'The SP was saved, but runtime publication could not be confirmed in the generated SimpleSAMLphp metadata. Regenerate config or restart the runtime containers.',
+        ];
     }
 
     #[Route('/{id}/regenerate-keypair', name: 'regenerate_keypair', methods: ['POST'])]

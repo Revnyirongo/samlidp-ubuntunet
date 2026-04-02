@@ -477,9 +477,10 @@ PHP;
         $tmp = $path . '.tmp.' . $tenantSlug . '.' . getmypid();
         $this->fs->dumpFile($tmp, $content);
 
-        // Validate that the generated file is parseable PHP without relying on shell access.
+        // Lightweight syntax validation. Requiring large generated metadata files can
+        // exhaust memory because PHP executes all array assignments during validation.
         try {
-            require $tmp;
+            token_get_all($content, \TOKEN_PARSE);
         } catch (\ParseError $e) {
             $this->fs->remove($tmp);
             throw new \RuntimeException(

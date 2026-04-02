@@ -453,6 +453,43 @@
            class="px-4 py-2.5 text-sm text-gray-600 hover:text-gray-800">Cancel</a>
     </div>
 </form>
+
+{% if tenant.id %}
+<div class="bg-white rounded-xl border border-gray-200 p-6 mt-5">
+    <h2 class="text-sm font-semibold text-gray-900 mb-1.5">Import Service Provider</h2>
+    <p class="mb-4 text-xs text-gray-500">Add a service provider from a metadata URL or paste its XML metadata directly.</p>
+
+    <form action="{{ path('admin_tenant_import_sp', {id: tenant.id}) }}" method="post" class="space-y-4">
+        <input type="hidden" name="_token" value="{{ csrf_token('import-sp-' ~ tenant.id) }}">
+
+        <div>
+            <label for="metadata_url" class="mb-1.5 block text-sm font-medium text-gray-700">Metadata URL</label>
+            <input id="metadata_url" type="url" name="metadata_url"
+                   placeholder="https://sp.example.org/Shibboleth.sso/Metadata"
+                   class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-idp-500 focus:outline-none focus:ring-2 focus:ring-idp-100">
+        </div>
+
+        <div>
+            <label for="metadata_xml" class="mb-1.5 block text-sm font-medium text-gray-700">Metadata XML</label>
+            <textarea id="metadata_xml" name="metadata_xml" rows="8"
+                      placeholder="Paste SP EntityDescriptor XML here if you are not importing from a URL."
+                      class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono focus:border-idp-500 focus:outline-none focus:ring-2 focus:ring-idp-100"></textarea>
+        </div>
+
+        <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+            <input type="checkbox" name="approve" value="1" class="rounded border-gray-300 text-idp-500 focus:ring-idp-500">
+            Auto-approve this service provider
+        </label>
+
+        <div>
+            <button type="submit"
+                    class="rounded-lg bg-idp-500 px-4 py-2 text-sm font-medium text-white hover:bg-idp-600">
+                Import SP
+            </button>
+        </div>
+    </form>
+</div>
+{% endif %}
 </div>
 {% endblock %}
 

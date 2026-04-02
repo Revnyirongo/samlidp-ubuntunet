@@ -50,6 +50,7 @@ security:
         - { path: ^/register,       roles: PUBLIC_ACCESS }
         - { path: ^/tenant/[^/]+/register, roles: PUBLIC_ACCESS }
         - { path: ^/tenant/[^/]+/forgot-password, roles: PUBLIC_ACCESS }
+        - { path: ^/tenant/[^/]+/mfa/setup, roles: PUBLIC_ACCESS }
         - { path: ^/tenant-users/reset/, roles: PUBLIC_ACCESS }
         - { path: ^/forgot-password, roles: PUBLIC_ACCESS }
         - { path: ^/reset-password, roles: PUBLIC_ACCESS }

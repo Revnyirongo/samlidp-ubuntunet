@@ -111,9 +111,14 @@ function ubuntunetNormalizeLogoUrl(?string $logoUrl): ?string
     return sprintf('%s://%s%s', $scheme, $host, $logoUrl);
 }
 
+function ubuntunetNormalizedStateId(string $stateId): string
+{
+    return preg_replace('#(https://[^/:]+):80/#', '$1/', $stateId) ?? $stateId;
+}
+
 $stateId = $_REQUEST['AuthState'];
 $state = null;
-foreach (['ubuntunet:DatabaseAuth', 'ubuntunet:UserPassAuth'] as $stageId) {
+foreach (['ubuntunet:DatabaseAuth', 'ubuntunet:UserPassAuth', 'ubuntunet:MfaChallenge'] as $stageId) {
     try {
         $state = \SimpleSAML\Auth\State::loadState($stateId, $stageId);
         break;
@@ -137,28 +142,67 @@ if (
 }
 
 $errors = [];
-$formStateId = preg_replace('#(https://[^/:]+):80/#', '$1/', $stateId) ?? $stateId;
+$formStateId = ubuntunetNormalizedStateId($stateId);
+$tenantSlug = $state['ubuntunet:TenantSlug'] ?? (method_exists($source, 'getTenantSlug') ? $source->getTenantSlug() : null);
+$setupMfaUrl = is_string($tenantSlug) && $tenantSlug !== '' ? '/tenant/' . rawurlencode($tenantSlug) . '/mfa/setup' : null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = trim($_POST['username'] ?? '');
-    $password = $_POST['password'] ?? '';
+    $step = $_POST['step'] ?? 'password';
+    if ($step === 'totp') {
+        $code = trim((string) ($_POST['code'] ?? ''));
+        $secret = is_string($state['ubuntunet:MfaSecret'] ?? null) ? $state['ubuntunet:MfaSecret'] : null;
 
-    if ($username === '' || $password === '') {
-        $errors[] = 'Please enter both username and password.';
-    } else {
-        try {
-            $attributes = $source->login($username, $password);
+        if (!\SimpleSAML\Module\ubuntunet\Security\Totp::verifyCode($secret, $code)) {
+            $errors[] = 'Incorrect verification code.';
+        } else {
+            $attributes = $state['ubuntunet:MfaAttributes'] ?? null;
+            if (!is_array($attributes)) {
+                throw new \SimpleSAML\Error\Exception('Missing pending MFA attributes.');
+            }
+
             $state['Attributes'] = $attributes;
+            unset(
+                $state['ubuntunet:MfaAttributes'],
+                $state['ubuntunet:MfaSecret'],
+                $state['ubuntunet:MfaIdentifier'],
+                $state['ubuntunet:MfaStep']
+            );
             \SimpleSAML\Auth\Source::completeAuth($state);
-        } catch (\SimpleSAML\Error\Error $e) {
-            $errors[] = match ($e->getErrorCode()) {
-                'WRONGUSERPASS' => 'Incorrect username or password.',
-                'NOACCESS' => 'Your account has been disabled. Contact your IT helpdesk.',
-                default => 'Authentication failed. Please try again.',
-            };
-        } catch (\Throwable $e) {
-            \SimpleSAML\Logger::error('ubuntunet login error: ' . $e->getMessage());
-            $errors[] = 'An internal error occurred. Please try again.';
+        }
+    } else {
+        $username = trim($_POST['username'] ?? '');
+        $password = $_POST['password'] ?? '';
+
+        if ($username === '' || $password === '') {
+            $errors[] = 'Please enter both username and password.';
+        } else {
+            try {
+                $attributes = $source->login($username, $password);
+                $context = method_exists($source, 'getLastLoginContext') ? $source->getLastLoginContext() : null;
+
+                if (is_array($context) && !empty($context['must_setup_totp'])) {
+                    $errors[] = 'An authenticator app must be set up before you can sign in.';
+                } elseif (is_array($context) && !empty($context['requires_totp']) && !empty($context['totp_secret'])) {
+                    $state['ubuntunet:MfaAttributes'] = $attributes;
+                    $state['ubuntunet:MfaSecret'] = $context['totp_secret'];
+                    $state['ubuntunet:MfaIdentifier'] = $context['display_identifier'] ?? $username;
+                    $state['ubuntunet:MfaStep'] = true;
+                    $stateId = \SimpleSAML\Auth\State::saveState($state, 'ubuntunet:MfaChallenge');
+                    $formStateId = ubuntunetNormalizedStateId($stateId);
+                } else {
+                    $state['Attributes'] = $attributes;
+                    \SimpleSAML\Auth\Source::completeAuth($state);
+                }
+            } catch (\SimpleSAML\Error\Error $e) {
+                $errors[] = match ($e->getErrorCode()) {
+                    'WRONGUSERPASS' => 'Incorrect username or password.',
+                    'NOACCESS' => 'Your account has been disabled. Contact your IT helpdesk.',
+                    default => 'Authentication failed. Please try again.',
+                };
+            } catch (\Throwable $e) {
+                \SimpleSAML\Logger::error('ubuntunet login error: ' . $e->getMessage());
+                $errors[] = 'An internal error occurred. Please try again.';
+            }
         }
     }
 }
@@ -168,8 +212,10 @@ $template = new \SimpleSAML\XHTML\Template($globalConfig, 'ubuntunet:loginuserpa
 $template->data['formTarget'] = '/simplesaml/module.php/ubuntunet/loginuserpass.php';
 $template->data['stateParams'] = ['AuthState' => $formStateId];
 $template->data['errors'] = $errors;
-$template->data['username'] = $_POST['username'] ?? '';
-$tenantSlug = $state['ubuntunet:TenantSlug'] ?? (method_exists($source, 'getTenantSlug') ? $source->getTenantSlug() : null);
+$template->data['totp_step'] = !empty($state['ubuntunet:MfaStep']);
+$template->data['username'] = $template->data['totp_step']
+    ? (string) ($state['ubuntunet:MfaIdentifier'] ?? '')
+    : ($_POST['username'] ?? '');
 $branding = ubuntunetTenantBranding(is_string($tenantSlug) ? $tenantSlug : null);
 $template->data['tenant_name'] = $branding['name'] ?? getenv('TENANT_NAME') ?: 'eduID.africa';
 $template->data['logo_url'] = $branding['logo_url'] ?? getenv('TENANT_LOGO_URL') ?: null;
@@ -178,4 +224,5 @@ $template->data['helpUrl'] = $branding['help_url'] ?? null;
 $template->data['service_home_url'] = sprintf('%s://%s', (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http', $_SERVER['HTTP_HOST'] ?? (getenv('SAMLIDP_HOSTNAME') ?: 'example.com'));
 $template->data['forgot_password_url'] = is_string($tenantSlug) && $tenantSlug !== '' ? '/tenant/' . rawurlencode($tenantSlug) . '/forgot-password' : null;
 $template->data['register_url'] = is_string($tenantSlug) && $tenantSlug !== '' ? '/tenant/' . rawurlencode($tenantSlug) . '/register' : null;
+$template->data['setup_mfa_url'] = $setupMfaUrl;
 $template->send();

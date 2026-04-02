@@ -20,6 +20,11 @@
 {% else %}
 <form method="post" class="space-y-5">
     <input type="hidden" name="_token" value="{{ csrf_token('tenant_register_' ~ tenant.slug) }}">
+    <input type="hidden" name="_challenge" value="{{ form_challenge }}">
+    <div class="hidden" aria-hidden="true">
+        <label for="company">Company</label>
+        <input id="company" name="company" type="text" tabindex="-1" autocomplete="off">
+    </div>
     <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
         Tenant: <span class="font-semibold text-slate-900">{{ tenant.name }}</span>
     </div>
@@ -68,6 +73,7 @@
             class="w-full rounded-2xl bg-idp-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-idp-500">
         Submit for approval
     </button>
+    <p class="text-center text-xs text-slate-400">Protected by automated abuse controls.</p>
     <div class="space-y-2 text-center text-sm text-slate-500">
         <div>
             <a href="{{ path('app_tenant_forgot_password', {slug: tenant.slug}) }}" class="font-semibold text-idp-600 hover:underline">Already have an account? Reset password</a>

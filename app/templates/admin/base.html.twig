@@ -136,6 +136,12 @@
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M8 4h8l4 4v12H4V4h4z"/></svg>
                 Audit Log
             </a>
+
+            <a href="{{ path('app_profile') }}"
+               class="sidebar-link {{ app.request.attributes.get('_route') in ['app_profile', 'app_profile_mfa'] ? 'active' : '' }}">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A9 9 0 1118.88 17.8M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                Profile
+            </a>
         </nav>
 
         <div class="border-t border-slate-200/70 px-4 py-4">

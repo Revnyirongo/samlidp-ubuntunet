@@ -2,6 +2,23 @@ framework:
     secret: '%env(APP_SECRET)%'
     http_method_override: true
     handle_all_throwables: true
+    rate_limiter:
+        public_registration:
+            policy: 'sliding_window'
+            limit: 5
+            interval: '30 minutes'
+        tenant_registration:
+            policy: 'sliding_window'
+            limit: 8
+            interval: '30 minutes'
+        public_password_reset:
+            policy: 'sliding_window'
+            limit: 10
+            interval: '30 minutes'
+        tenant_password_reset:
+            policy: 'sliding_window'
+            limit: 10
+            interval: '30 minutes'
 
     session:
         handler_id: app.session.handler.redis

@@ -11,6 +11,7 @@ use App\Repository\RegistrationRequestRepository;
 use App\Repository\TenantRepository;
 use App\Repository\UserRepository;
 use App\Service\NotificationMailer;
+use App\Service\PublicFormProtection;
 use App\Service\UserActionTokenService;
 use App\Service\MailerStatus;
 use Doctrine\ORM\EntityManagerInterface;
@@ -32,6 +33,7 @@ class AccountController extends AbstractController
         private readonly UserPasswordHasherInterface $hasher,
         private readonly NotificationMailer $mailer,
         private readonly MailerStatus $mailerStatus,
+        private readonly PublicFormProtection $formProtection,
         private readonly ValidatorInterface $validator,
     ) {}
 
@@ -54,8 +56,11 @@ class AccountController extends AbstractController
 
             $data = array_replace($data, $request->request->all('registration'));
             $email = strtolower(trim((string) ($data['email'] ?? '')));
+            $formError = $this->formProtection->validateSubmission($request, PublicFormProtection::PUBLIC_REGISTER);
 
-            if ($email === '' || trim((string) ($data['fullName'] ?? '')) === '') {
+            if ($formError !== null) {
+                $this->addFlash('danger', $formError);
+            } elseif ($email === '' || trim((string) ($data['fullName'] ?? '')) === '') {
                 $this->addFlash('danger', 'Full name and email are required.');
             } elseif ($this->registrationRepo->findPendingByEmail($email) !== null) {
                 $this->addFlash('info', 'A registration request for this email is already pending review.');
@@ -108,6 +113,7 @@ class AccountController extends AbstractController
         return $this->render('security/register.html.twig', [
             'tenants' => $tenants,
             'formData' => $data,
+            'form_challenge' => $this->formProtection->issueChallenge($request, PublicFormProtection::PUBLIC_REGISTER),
             'mailer_enabled' => $this->mailerStatus->isEnabled(),
         ]);
     }
@@ -120,32 +126,38 @@ class AccountController extends AbstractController
                 throw $this->createAccessDeniedException('Invalid CSRF token.');
             }
 
-            $email = strtolower(trim($request->request->getString('email')));
-            $user = $this->userRepo->findOneBy(['email' => $email]);
+            $formError = $this->formProtection->validateSubmission($request, PublicFormProtection::PUBLIC_FORGOT_PASSWORD);
+            if ($formError !== null) {
+                $this->addFlash('danger', $formError);
+            } else {
+                $email = strtolower(trim($request->request->getString('email')));
+                $user = $this->userRepo->findOneBy(['email' => $email]);
 
-            if ($user instanceof User) {
-                $mailFailed = false;
-                try {
-                    $rawToken = $this->tokenService->issue($user, UserActionToken::PURPOSE_PASSWORD_RESET);
-                    $this->mailer->sendPasswordReset($user, $rawToken);
-                } catch (\Throwable) {
-                    $mailFailed = true;
+                if ($user instanceof User) {
+                    $mailFailed = false;
+                    try {
+                        $rawToken = $this->tokenService->issue($user, UserActionToken::PURPOSE_PASSWORD_RESET);
+                        $this->mailer->sendPasswordReset($user, $rawToken);
+                    } catch (\Throwable) {
+                        $mailFailed = true;
+                    }
+                } else {
+                    $mailFailed = false;
                 }
-            } else {
-                $mailFailed = false;
-            }
 
-            if (!$this->mailerStatus->isEnabled()) {
-                $this->addFlash('warning', 'Mail delivery is currently disabled on this server. No password reset email was sent.');
-            } elseif ($mailFailed ?? false) {
-                $this->addFlash('warning', 'If that account exists, the reset request was recorded but email delivery failed. Contact support.');
-            } else {
-                $this->addFlash('success', 'If that account exists, a password reset email has been sent.');
+                if (!$this->mailerStatus->isEnabled()) {
+                    $this->addFlash('warning', 'Mail delivery is currently disabled on this server. No password reset email was sent.');
+                } elseif ($mailFailed ?? false) {
+                    $this->addFlash('warning', 'If that account exists, the reset request was recorded but email delivery failed. Contact support.');
+                } else {
+                    $this->addFlash('success', 'If that account exists, a password reset email has been sent.');
+                }
+                return $this->redirectToRoute('app_login');
             }
-            return $this->redirectToRoute('app_login');
         }
 
         return $this->render('security/forgot_password.html.twig', [
+            'form_challenge' => $this->formProtection->issueChallenge($request, PublicFormProtection::PUBLIC_FORGOT_PASSWORD),
             'mailer_enabled' => $this->mailerStatus->isEnabled(),
         ]);
     }

@@ -47,6 +47,16 @@ class IdpUserRepository extends ServiceEntityRepository
         return null;
     }
 
+    public function countByTenant(Tenant $tenant): int
+    {
+        return (int) $this->createQueryBuilder('u')
+            ->select('COUNT(u.id)')
+            ->where('u.tenant = :tenant')
+            ->setParameter('tenant', $tenant)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
     public function save(IdpUser $user, bool $flush = false): void
     {
         $this->getEntityManager()->persist($user);
