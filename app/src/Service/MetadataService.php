@@ -136,6 +136,7 @@ class MetadataService
                 );
                 foreach ($data as $spData) {
                     try {
+                        $spData = $this->enrichParsedServiceProvider($spData);
                         $entityId = $spData->getEntityId();
                         $existing = $knownServiceProviders[$entityId] ?? null;
                         if ($existing !== null) {
@@ -659,6 +660,8 @@ class MetadataService
             $sp->setRequestedAttributes($requestedAttributes);
         }
 
+        $sp->setRawMetadataXml($xml);
+
         return $sp;
     }
 
@@ -723,6 +726,81 @@ class MetadataService
             $target->setRawMetadataXml($source->getRawMetadataXml());
         }
         $target->setRequestedAttributes($source->getRequestedAttributes());
+    }
+
+    private function enrichParsedServiceProvider(ServiceProvider $serviceProvider): ServiceProvider
+    {
+        if (($acsUrl = $serviceProvider->getAcsUrl()) !== null && trim($acsUrl) !== '') {
+            return $serviceProvider;
+        }
+
+        foreach ($this->guessDirectMetadataUrls($serviceProvider->getEntityId()) as $metadataUrl) {
+            try {
+                $xml = $this->fetchMetadataUrl($metadataUrl);
+                $enriched = $this->parseEntityDescriptor($xml);
+
+                if (trim((string) $enriched->getEntityId()) !== trim($serviceProvider->getEntityId())) {
+                    continue;
+                }
+
+                if (trim((string) $enriched->getAcsUrl()) === '') {
+                    continue;
+                }
+
+                $enriched->setSource($serviceProvider->getSource());
+                $enriched->setApproved($serviceProvider->isApproved());
+                $this->logger->info('Enriched SP metadata from direct metadata endpoint', [
+                    'entityId' => $serviceProvider->getEntityId(),
+                    'metadataUrl' => $metadataUrl,
+                ]);
+
+                return $enriched;
+            } catch (\Throwable $e) {
+                $this->logger->debug('Direct metadata enrichment attempt failed', [
+                    'entityId' => $serviceProvider->getEntityId(),
+                    'metadataUrl' => $metadataUrl,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return $serviceProvider;
+    }
+
+    /**
+     * @return string[]
+     */
+    private function guessDirectMetadataUrls(string $entityId): array
+    {
+        $entityId = trim($entityId);
+        if ($entityId === '' || filter_var($entityId, \FILTER_VALIDATE_URL) === false) {
+            return [];
+        }
+
+        $parts = parse_url($entityId);
+        $scheme = $parts['scheme'] ?? null;
+        $host = $parts['host'] ?? null;
+        if (!is_string($scheme) || !is_string($host) || $scheme === '' || $host === '') {
+            return [];
+        }
+
+        $base = sprintf('%s://%s', $scheme, $host);
+        $path = trim((string) ($parts['path'] ?? ''));
+        $candidates = [];
+
+        if (str_contains(strtolower($path), 'shibboleth')) {
+            $candidates[] = $base . '/Shibboleth.sso/Metadata';
+        }
+
+        if (str_contains(strtolower($path), 'simplesaml')) {
+            $candidates[] = $entityId;
+        }
+
+        if (str_contains(strtolower($path), 'metadata')) {
+            $candidates[] = $entityId;
+        }
+
+        return array_values(array_unique($candidates));
     }
 
     /**
