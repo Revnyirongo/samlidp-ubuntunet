@@ -123,15 +123,7 @@ PHP;
         $tenants = $this->tenantRepo->findAllActive();
         $blocks = [];
         foreach ($tenants as $configuredTenant) {
-            $authSourceName = 'idp-' . $configuredTenant->getSlug();
-            $blocks[] = match ($configuredTenant->getAuthType()) {
-                Tenant::AUTH_LDAP     => $this->buildLdapAuthSource($configuredTenant, $authSourceName),
-                Tenant::AUTH_SAML     => $this->buildSamlAuthSource($configuredTenant, $authSourceName),
-                Tenant::AUTH_USERPASS => $this->buildUserpassAuthSource($configuredTenant, $authSourceName),
-                Tenant::AUTH_DATABASE => $this->buildUserpassAuthSource($configuredTenant, $authSourceName),
-                Tenant::AUTH_RADIUS   => $this->buildRadiusAuthSource($configuredTenant, $authSourceName),
-                default               => throw new \InvalidArgumentException('Unknown auth type: ' . $configuredTenant->getAuthType()),
-            };
+            $blocks = [...$blocks, ...$this->buildAuthSourceBlocks($configuredTenant)];
         }
 
         $php = <<<PHP
@@ -154,14 +146,7 @@ PHP;
         $this->writePhpFile($globalPath, $php, $tenant->getSlug());
 
         $legacyPath = $this->sspConfigDir . '/authsources-' . $tenant->getSlug() . '.php';
-        $legacyBlock = match ($tenant->getAuthType()) {
-            Tenant::AUTH_LDAP     => $this->buildLdapAuthSource($tenant, 'idp-' . $tenant->getSlug()),
-            Tenant::AUTH_SAML     => $this->buildSamlAuthSource($tenant, 'idp-' . $tenant->getSlug()),
-            Tenant::AUTH_USERPASS => $this->buildUserpassAuthSource($tenant, 'idp-' . $tenant->getSlug()),
-            Tenant::AUTH_DATABASE => $this->buildUserpassAuthSource($tenant, 'idp-' . $tenant->getSlug()),
-            Tenant::AUTH_RADIUS   => $this->buildRadiusAuthSource($tenant, 'idp-' . $tenant->getSlug()),
-            default               => throw new \InvalidArgumentException('Unknown auth type: ' . $tenant->getAuthType()),
-        };
+        $legacyBlock = $this->joinBlocks($this->buildAuthSourceBlocks($tenant));
         $legacyPhp = <<<PHP
 <?php
 /**
@@ -410,6 +395,161 @@ PHP;
 PHP;
     }
 
+    /**
+     * @return string[]
+     */
+    private function buildAuthSourceBlocks(Tenant $tenant): array
+    {
+        $authSourceName = 'idp-' . $tenant->getSlug();
+
+        return match ($tenant->getAuthType()) {
+            Tenant::AUTH_LDAP     => [$this->buildLdapAuthSource($tenant, $authSourceName)],
+            Tenant::AUTH_SAML     => $this->buildBrokeredSamlAuthSources($tenant, $authSourceName),
+            Tenant::AUTH_USERPASS => [$this->buildUserpassAuthSource($tenant, $authSourceName)],
+            Tenant::AUTH_DATABASE => [$this->buildUserpassAuthSource($tenant, $authSourceName)],
+            Tenant::AUTH_RADIUS   => [$this->buildRadiusAuthSource($tenant, $authSourceName)],
+            default               => throw new \InvalidArgumentException('Unknown auth type: ' . $tenant->getAuthType()),
+        };
+    }
+
+    /**
+     * @return string[]
+     */
+    private function buildBrokeredSamlAuthSources(Tenant $tenant, string $name): array
+    {
+        $cfg = $tenant->getSamlUpstreamConfig() ?? [];
+        $methods = $this->getEnabledBrokerMethods($cfg);
+
+        if ($methods === []) {
+            return [$this->buildSamlAuthSource($tenant, $name)];
+        }
+
+        if (count($methods) === 1) {
+            return [$this->buildBrokerMethodBlock($tenant, $name, $methods[0])];
+        }
+
+        $blocks = [];
+        $sources = [];
+        foreach ($methods as $method) {
+            $methodName = $this->buildBrokerMethodName($name, $method);
+            $blocks[] = $this->buildBrokerMethodBlock($tenant, $methodName, $method);
+            $sources[$methodName] = [
+                'text' => $this->normalizeBrokerLabel($method, $this->defaultBrokerLabel($method)),
+            ];
+        }
+
+        $blocks[] = $this->buildMultiAuthSource($name, $sources, $cfg['preselect'] ?? null);
+
+        return $blocks;
+    }
+
+    /**
+     * @param array<string, mixed> $method
+     */
+    private function buildBrokerMethodBlock(Tenant $tenant, string $name, array $method): string
+    {
+        return match ($method['type'] ?? null) {
+            'local' => $this->buildUserpassAuthSource($tenant, $name),
+            'saml' => $this->buildUpstreamSamlMethodAuthSource($name, $method),
+            'oidc' => $this->buildOidcMethodAuthSource($name, $method),
+            default => throw new \InvalidArgumentException(sprintf(
+                'Tenant "%s" uses an unsupported broker method type "%s".',
+                $tenant->getSlug(),
+                (string) ($method['type'] ?? '')
+            )),
+        };
+    }
+
+    /**
+     * @param array<string, array<string, mixed>> $sources
+     */
+    private function buildMultiAuthSource(string $name, array $sources, mixed $preselect = null): string
+    {
+        $preselectLine = '';
+        if (is_string($preselect) && trim($preselect) !== '') {
+            $preselectName = $this->buildBrokerMethodName($name, ['key' => trim($preselect)]);
+            $preselectLine = "        'preselect' => '" . addslashes($preselectName) . "',\n";
+        }
+
+        return <<<PHP
+    '{$name}' => [
+        'multiauth:MultiAuth',
+        'sources' => {$this->phpArrayLiteral($sources)},
+{$preselectLine}    ],
+PHP;
+    }
+
+    /**
+     * @param array<string, mixed> $method
+     */
+    private function buildUpstreamSamlMethodAuthSource(string $name, array $method): string
+    {
+        $upstreamIdp = addslashes(trim((string) ($method['idp_entity_id'] ?? '')));
+        $metadataUrl = addslashes(trim((string) ($method['metadata_url'] ?? '')));
+        $discoUrl = addslashes(trim((string) ($method['discovery_url'] ?? '')));
+
+        if ($upstreamIdp === '' && $metadataUrl === '') {
+            throw new \InvalidArgumentException('Broker SAML method requires "metadata_url" or "idp_entity_id".');
+        }
+
+        return <<<PHP
+    '{$name}' => [
+        'saml:SP',
+        'entityID'       => null,
+        'idp'            => '{$upstreamIdp}' ?: null,
+        'discoURL'       => '{$discoUrl}' ?: null,
+        'metadataURL'    => '{$metadataUrl}' ?: null,
+        'privatekey'     => 'wildcard_certificate.key',
+        'certificate'    => 'wildcard_certificate.crt',
+        'sign.authnrequest' => true,
+        'sign.logout'       => true,
+    ],
+PHP;
+    }
+
+    /**
+     * @param array<string, mixed> $method
+     */
+    private function buildOidcMethodAuthSource(string $name, array $method): string
+    {
+        $providerName = addslashes(trim((string) ($method['provider_name'] ?? $this->defaultBrokerLabel($method))));
+        $issuer = addslashes(rtrim(trim((string) ($method['issuer'] ?? '')), '/'));
+        $clientId = addslashes(trim((string) ($method['client_id'] ?? '')));
+        $clientSecret = addslashes(trim((string) ($method['client_secret'] ?? '')));
+        $clientAuthMethod = addslashes(trim((string) ($method['client_auth_method'] ?? 'client_secret_post')));
+        $prompt = addslashes(trim((string) ($method['prompt'] ?? '')));
+        $loginHint = addslashes(trim((string) ($method['login_hint'] ?? '')));
+        $authorizationEndpoint = addslashes(trim((string) ($method['authorization_endpoint'] ?? '')));
+        $tokenEndpoint = addslashes(trim((string) ($method['token_endpoint'] ?? '')));
+        $userinfoEndpoint = addslashes(trim((string) ($method['userinfo_endpoint'] ?? '')));
+        $jwksUri = addslashes(trim((string) ($method['jwks_uri'] ?? '')));
+        $scopes = $this->phpArrayLiteral($method['scopes'] ?? ['openid', 'email', 'profile']);
+        $attributeMap = $this->phpArrayLiteral($method['attribute_map'] ?? $this->getDefaultOidcAttributeMap());
+
+        if ($clientId === '' || $clientSecret === '') {
+            throw new \InvalidArgumentException('Broker OIDC method requires "client_id" and "client_secret".');
+        }
+
+        return <<<PHP
+    '{$name}' => [
+        'ubuntunetbroker:OidcGeneric',
+        'provider_name' => '{$providerName}',
+        'issuer' => '{$issuer}',
+        'client_id' => '{$clientId}',
+        'client_secret' => '{$clientSecret}',
+        'client_auth_method' => '{$clientAuthMethod}',
+        'prompt' => '{$prompt}',
+        'login_hint' => '{$loginHint}',
+        'authorization_endpoint' => '{$authorizationEndpoint}',
+        'token_endpoint' => '{$tokenEndpoint}',
+        'userinfo_endpoint' => '{$userinfoEndpoint}',
+        'jwks_uri' => '{$jwksUri}',
+        'scopes' => {$scopes},
+        'attribute_map' => {$attributeMap},
+    ],
+PHP;
+    }
+
     private function buildUserpassAuthSource(Tenant $tenant, string $name): string
     {
         // Builds a database-backed auth source using our custom ubuntunet module
@@ -507,8 +647,141 @@ PHP;
             'eduPersonPrincipalName',
             'eduPersonAffiliation',
             'eduPersonScopedAffiliation',
+            'eduPersonEntitlement',
             'eduPersonTargetedID',
+            'isMemberOf',
+            'preferredLanguage',
+            'copAccessGroup',
+            'copFunctionalGroup',
+            'copInstitutionalGroup',
             'schacHomeOrganization',
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $cfg
+     * @return array<int, array<string, mixed>>
+     */
+    private function getEnabledBrokerMethods(array $cfg): array
+    {
+        $methods = $cfg['methods'] ?? null;
+        if (!is_array($methods)) {
+            return [];
+        }
+
+        $enabled = [];
+        foreach ($methods as $index => $method) {
+            if (!is_array($method)) {
+                continue;
+            }
+
+            if (($method['enabled'] ?? true) === false) {
+                continue;
+            }
+
+            $type = trim((string) ($method['type'] ?? ''));
+            if ($type === '') {
+                continue;
+            }
+
+            if (!isset($method['key']) || trim((string) $method['key']) === '') {
+                $method['key'] = $type . '-' . ($index + 1);
+            }
+
+            $enabled[] = $method;
+        }
+
+        return $enabled;
+    }
+
+    /**
+     * @param array<string, mixed> $method
+     */
+    private function buildBrokerMethodName(string $rootName, array $method): string
+    {
+        $key = strtolower(trim((string) ($method['key'] ?? 'method')));
+        $key = preg_replace('/[^a-z0-9]+/', '-', $key) ?: 'method';
+        $key = trim($key, '-');
+
+        return $rootName . '--' . $key;
+    }
+
+    /**
+     * @param array<string, mixed> $method
+     * @return array<string, string>
+     */
+    private function normalizeBrokerLabel(array $method, string $fallback): array
+    {
+        $label = $method['label'] ?? $method['text'] ?? null;
+        if (is_array($label) && $label !== []) {
+            $normalized = [];
+            foreach ($label as $locale => $value) {
+                $locale = trim((string) $locale);
+                $value = trim((string) $value);
+                if ($locale !== '' && $value !== '') {
+                    $normalized[$locale] = $value;
+                }
+            }
+            if ($normalized !== []) {
+                return $normalized;
+            }
+        }
+
+        if (is_string($label) && trim($label) !== '') {
+            return ['en' => trim($label)];
+        }
+
+        return ['en' => $fallback];
+    }
+
+    /**
+     * @param array<string, mixed> $method
+     */
+    private function defaultBrokerLabel(array $method): string
+    {
+        $provider = trim((string) ($method['provider_name'] ?? ''));
+        if ($provider !== '') {
+            return $provider;
+        }
+
+        return match (trim((string) ($method['type'] ?? ''))) {
+            'local' => 'UbuntuNet account',
+            'saml' => 'Institutional login',
+            'oidc' => 'Social login',
+            default => 'Sign in',
+        };
+    }
+
+    private function getBrokerProfile(Tenant $tenant): array
+    {
+        $cfg = $tenant->getSamlUpstreamConfig() ?? [];
+        $profile = is_array($cfg['broker_profile'] ?? null) ? $cfg['broker_profile'] : [];
+        $defaultScope = trim((string) ($profile['default_scope'] ?? ''));
+
+        return [
+            'default_scope' => $defaultScope !== '' ? $defaultScope : $tenant->getSlug() . '.' . $this->samlidpHostname,
+            'identifier_salt' => trim((string) ($profile['identifier_salt'] ?? getenv('BROKER_IDENTIFIER_SALT') ?: 'change-me-before-production')),
+            'affiliation' => $profile['affiliation'] ?? ['member'],
+            'groups' => $profile['groups'] ?? [],
+            'entitlements' => $profile['entitlements'] ?? [],
+            'languages' => $profile['languages'] ?? [],
+            'access_groups' => $profile['access_groups'] ?? [],
+            'functional_groups' => $profile['functional_groups'] ?? [],
+            'institutional_groups' => $profile['institutional_groups'] ?? [],
+        ];
+    }
+
+    private function getDefaultOidcAttributeMap(): array
+    {
+        return [
+            'sub' => ['uid', 'oidc_sub'],
+            'email' => ['mail'],
+            'name' => ['displayName', 'display_name', 'cn'],
+            'given_name' => ['givenName'],
+            'family_name' => ['sn', 'surName'],
+            'preferred_username' => ['username'],
+            'locale' => ['preferredLanguage'],
+            'hd' => ['schacHomeOrganization'],
         ];
     }
 
@@ -609,6 +882,7 @@ PHP;
         $hostedRegistrationInfo = $this->normalizeHostedRegistrationInfo($metadata['registration_info'] ?? []);
         $orgName = addslashes($metadata['organization_name']);
         $orgUrl  = addslashes($metadata['organization_url']);
+        $authProcLines = $this->buildHostedAuthProcLines($tenant);
         $contactSection = $metadata['contacts'] === []
             ? ''
             : "    'contacts' => " . $this->phpArrayLiteral($metadata['contacts']) . ",\n";
@@ -645,25 +919,7 @@ PHP;
     ],
     'attributes.NameFormat' => 'urn:oasis:names:tc:SAML:2.0:attrname-format:uri',
     'authproc' => [
-        5 => [
-            'class' => 'saml:PersistentNameID',
-            'identifyingAttribute' => 'eduPersonPrincipalName',
-        ],
-        20 => [
-            'class' => 'saml:PersistentNameID2TargetedID',
-            'attribute' => 'eduPersonTargetedID',
-            'nameId' => false,
-        ],
-        70 => [
-            'class'   => 'core:AttributeLimit',
-            'default' => {$this->phpArrayLiteral($this->getDefaultAttributes($tenant))},
-        ],
-        80 => [
-            'class' => 'core:AttributeMap',
-            'name2oid',
-            '%duplicate',
-        ],
-    ],
+{$authProcLines}    ],
     'OrganizationName'        => ['en' => '{$orgName}'],
     'OrganizationDisplayName' => ['en' => '{$orgName}'],
     'OrganizationURL'         => ['en' => '{$orgUrl}'],
@@ -724,5 +980,48 @@ PHP;
         }, $uiInfo['Logo']);
 
         return $uiInfo;
+    }
+
+    private function buildHostedAuthProcLines(Tenant $tenant): string
+    {
+        $lines = [];
+
+        if ($tenant->getAuthType() === Tenant::AUTH_SAML && $this->getEnabledBrokerMethods($tenant->getSamlUpstreamConfig() ?? []) !== []) {
+            $profile = $this->getBrokerProfile($tenant);
+            $lines[] = "        5 => [\n"
+                . "            'class' => 'ubuntunetbroker:AttributeAugment',\n"
+                . "            'idp' => '" . addslashes($tenant->getSlug()) . "',\n"
+                . "            'scope' => '" . addslashes((string) $profile['default_scope']) . "',\n"
+                . "            'identifier_salt' => '" . addslashes((string) $profile['identifier_salt']) . "',\n"
+                . "            'affiliation' => " . $this->phpArrayLiteral((array) $profile['affiliation']) . ",\n"
+                . "            'groups' => " . $this->phpArrayLiteral((array) $profile['groups']) . ",\n"
+                . "            'entitlements' => " . $this->phpArrayLiteral((array) $profile['entitlements']) . ",\n"
+                . "            'languages' => " . $this->phpArrayLiteral((array) $profile['languages']) . ",\n"
+                . "            'access_groups' => " . $this->phpArrayLiteral((array) $profile['access_groups']) . ",\n"
+                . "            'functional_groups' => " . $this->phpArrayLiteral((array) $profile['functional_groups']) . ",\n"
+                . "            'institutional_groups' => " . $this->phpArrayLiteral((array) $profile['institutional_groups']) . ",\n"
+                . "        ],";
+        }
+
+        $lines[] = "        20 => [\n"
+            . "            'class' => 'saml:PersistentNameID',\n"
+            . "            'identifyingAttribute' => 'eduPersonPrincipalName',\n"
+            . "        ],";
+        $lines[] = "        30 => [\n"
+            . "            'class' => 'saml:PersistentNameID2TargetedID',\n"
+            . "            'attribute' => 'eduPersonTargetedID',\n"
+            . "            'nameId' => false,\n"
+            . "        ],";
+        $lines[] = "        70 => [\n"
+            . "            'class'   => 'core:AttributeLimit',\n"
+            . "            'default' => " . $this->phpArrayLiteral($this->getDefaultAttributes($tenant)) . ",\n"
+            . "        ],";
+        $lines[] = "        80 => [\n"
+            . "            'class' => 'core:AttributeMap',\n"
+            . "            'name2oid',\n"
+            . "            '%duplicate',\n"
+            . "        ],";
+
+        return implode("\n", $lines) . "\n";
     }
 }

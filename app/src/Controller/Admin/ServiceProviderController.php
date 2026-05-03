@@ -34,6 +34,12 @@ class ServiceProviderController extends AbstractController
         'eduPersonAffiliation',
         'eduPersonScopedAffiliation',
         'eduPersonEntitlement',
+        'eduPersonTargetedID',
+        'isMemberOf',
+        'preferredLanguage',
+        'copAccessGroup',
+        'copFunctionalGroup',
+        'copInstitutionalGroup',
         'schacHomeOrganization',
         'schacHomeOrganizationType',
     ];

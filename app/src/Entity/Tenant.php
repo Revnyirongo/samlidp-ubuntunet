@@ -249,11 +249,57 @@ class Tenant
                 return;
             }
 
+            $methods = $config['methods'] ?? null;
+            if (is_array($methods) && $methods !== []) {
+                $enabledMethods = array_values(array_filter($methods, static fn (mixed $method): bool => is_array($method) && ($method['enabled'] ?? true)));
+                if ($enabledMethods === []) {
+                    $context->buildViolation('At least one enabled broker method is required in "methods".')
+                        ->atPath('samlUpstreamConfig')
+                        ->addViolation();
+                    return;
+                }
+
+                foreach ($enabledMethods as $index => $method) {
+                    $type = trim((string) ($method['type'] ?? ''));
+                    if ($type === 'saml') {
+                        $metadataUrl = trim((string) ($method['metadata_url'] ?? ''));
+                        $idpEntityId = trim((string) ($method['idp_entity_id'] ?? ''));
+                        if ($metadataUrl === '' && $idpEntityId === '') {
+                            $context->buildViolation(sprintf('Broker method #%d must provide "metadata_url" or "idp_entity_id" for upstream SAML.', $index + 1))
+                                ->atPath('samlUpstreamConfig')
+                                ->addViolation();
+                        }
+                    }
+
+                    if ($type === 'oidc') {
+                        $issuer = trim((string) ($method['issuer'] ?? ''));
+                        $authorizationEndpoint = trim((string) ($method['authorization_endpoint'] ?? ''));
+                        $tokenEndpoint = trim((string) ($method['token_endpoint'] ?? ''));
+                        $clientId = trim((string) ($method['client_id'] ?? ''));
+                        $clientSecret = trim((string) ($method['client_secret'] ?? ''));
+
+                        if ($issuer === '' && ($authorizationEndpoint === '' || $tokenEndpoint === '')) {
+                            $context->buildViolation(sprintf('Broker method #%d must provide "issuer" or both "authorization_endpoint" and "token_endpoint" for OIDC.', $index + 1))
+                                ->atPath('samlUpstreamConfig')
+                                ->addViolation();
+                        }
+
+                        if ($clientId === '' || $clientSecret === '') {
+                            $context->buildViolation(sprintf('Broker method #%d must provide "client_id" and "client_secret" for OIDC.', $index + 1))
+                                ->atPath('samlUpstreamConfig')
+                                ->addViolation();
+                        }
+                    }
+                }
+
+                return;
+            }
+
             $metadataUrl = trim((string) ($config['metadata_url'] ?? ''));
             $idpEntityId = trim((string) ($config['idp_entity_id'] ?? ''));
 
             if ($metadataUrl === '' && $idpEntityId === '') {
-                $context->buildViolation('Provide at least "metadata_url" or "idp_entity_id" for the upstream SAML IdP.')
+                $context->buildViolation('Provide at least "metadata_url" or "idp_entity_id" for the upstream SAML IdP, or define broker "methods".')
                     ->atPath('samlUpstreamConfig')
                     ->addViolation();
             }

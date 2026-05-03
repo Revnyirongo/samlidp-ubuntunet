@@ -106,8 +106,10 @@ cat > "${CONFIG_DIR}/config.php" << EOF
         'core'       => true,
         'saml'       => true,
         'ldap'       => true,
+        'multiauth'  => true,
         'statistics' => true,
         'ubuntunet'  => true,
+        'ubuntunetbroker' => true,
     ],
 
     'logging.level'   => SimpleSAML\Logger::NOTICE,

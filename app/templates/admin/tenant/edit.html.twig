@@ -305,7 +305,7 @@
   "idp_entity_id": "https://upstream-idp.example.org/idp/shibboleth",
   "discovery_url": "https://ds.example.org/WAYF"
 }' }}</textarea>
-            <p class="text-xs text-gray-400 mt-1">Provide at least <code>metadata_url</code> or <code>idp_entity_id</code>. Use this only when the tenant should proxy to an upstream SAML IdP.</p>
+            <p class="text-xs text-gray-400 mt-1">Legacy mode: provide <code>metadata_url</code> or <code>idp_entity_id</code>. Broker mode: provide a <code>methods</code> array with any mix of <code>local</code>, <code>saml</code>, and <code>oidc</code> entries plus optional <code>broker_profile</code> attributes for CoP roles and entitlements.</p>
         </div>
 
         {# RADIUS config panel #}

@@ -31,8 +31,65 @@ https://<tenant-slug>.example.com
 - Per-SP attribute release controls
 - Tenant-local users with invitation, reset, and approval workflows
 - LDAP, SAML proxy, database, and RADIUS-backed tenant authentication models
+- Brokered multi-method login for a tenant SAML session
 - Federation metadata generation and publication controls
 - eduroam-oriented authentication guidance for managed database tenants
+
+## Brokered Login
+
+Tenants using the `saml` backend can now run in either:
+
+- legacy upstream SAML proxy mode
+- broker mode with multiple upstream methods inside one IdP session
+
+Broker mode is configured in the tenant's `SAML Proxy Configuration (JSON)` field with a `methods` array.
+
+Supported method types:
+
+- `local`
+- `saml`
+- `oidc`
+
+Example:
+
+```json
+{
+  "methods": [
+    {
+      "key": "institutional",
+      "type": "saml",
+      "enabled": true,
+      "label": { "en": "Institutional login" },
+      "metadata_url": "https://idp.example.org/metadata",
+      "idp_entity_id": "https://idp.example.org/idp/shibboleth"
+    },
+    {
+      "key": "google",
+      "type": "oidc",
+      "enabled": true,
+      "label": { "en": "Google" },
+      "provider_name": "Google",
+      "issuer": "https://accounts.google.com",
+      "client_id": "set-per-tenant-or-per-environment",
+      "client_secret": "set-per-tenant-or-per-environment",
+      "scopes": ["openid", "email", "profile"],
+      "prompt": "select_account"
+    }
+  ],
+  "broker_profile": {
+    "default_scope": "community.example.com",
+    "affiliation": ["member"],
+    "groups": ["cop:library"],
+    "entitlements": ["urn:ubuntunet:cop:library:member"],
+    "languages": ["English"],
+    "access_groups": ["Member"],
+    "functional_groups": ["Facilitator"],
+    "institutional_groups": ["Partner"]
+  }
+}
+```
+
+In broker mode the runtime normalizes user identity into a consistent downstream attribute set so WordPress, Nextcloud, and future SPs can consume the same values regardless of whether the user came from institutional SAML or OIDC.
 
 ## Quick Start
 
